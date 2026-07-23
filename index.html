@@ -486,6 +486,21 @@ const LOGO_URI = 'data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BS
 function todayStr(){ return new Date().toISOString().split('T')[0]; }
 function dateOff(n){ const d=new Date(); d.setDate(d.getDate()+n); return d.toISOString().split('T')[0]; }
 
+// -- UTILITAIRES GÉNÉRAUX -----------------------------------------------
+const MSHORT=['jan','fév','mar','avr','mai','juin','juil','août','sep','oct','nov','déc'];
+const MFULL=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const DJFR=['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmtDate(d){if(!d)return'';const[y,m,dd]=d.split('-');return`${parseInt(dd)} ${MSHORT[parseInt(m)-1]} ${y}`;}
+function fmtDateFull(d){if(!d)return'';const dt=new Date(d+'T00:00:00');return dt.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});}
+function getDay(d){return d?parseInt(d.split('-')[2]):'';}
+function getMonth(d){return d?MSHORT[parseInt(d.split('-')[1])-1]:'';}
+function getMat(j){try{const a=typeof j==='string'?JSON.parse(j):j;return Array.isArray(a)?a:[];}catch{return [];}}
+function typeBadge(t){const m={bassin:'badge-bassin',fosse:'badge-purple',voyage:'badge-orange'};return m[t]||'badge-blue';}
+function typeLabel(t){return t==='fosse'?'Fosse/Piscine':t==='voyage'?'Voyage':'Mer/Bassin';}
+function typeCalEvt(t){return t==='fosse'?'cal-event-fosse':t==='voyage'?'cal-event-voyage':'cal-event-bassin';}
+
 const SUPA_URL = 'https://dfkcexldmcxgxvwcwxid.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRma2NleGxkbWN4Z3h2d2N3eGlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1MTQxMTcsImV4cCI6MjEwMDA5MDExN30.kG0qdlqlB-d3qcUFqK_1J_Ewb9eJ43KAjmkmlvPrlQQ';
 
