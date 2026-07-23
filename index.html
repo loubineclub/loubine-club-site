@@ -482,6 +482,10 @@ const LOGO_URI = 'data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BS
 // LOUBINE CLUB V2 — Couche données Supabase
 // ================================================================
 
+// -- UTILITAIRES DATE ---------------------------------------------------
+function todayStr(){ return new Date().toISOString().split('T')[0]; }
+function dateOff(n){ const d=new Date(); d.setDate(d.getDate()+n); return d.toISOString().split('T')[0]; }
+
 const SUPA_URL = 'https://dfkcexldmcxgxvwcwxid.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRma2NleGxkbWN4Z3h2d2N3eGlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1MTQxMTcsImV4cCI6MjEwMDA5MDExN30.kG0qdlqlB-d3qcUFqK_1J_Ewb9eJ43KAjmkmlvPrlQQ';
 
