@@ -498,11 +498,23 @@ const Session = {
   async get() {
     if(this._cache) return this._cache;
     const { data } = await sb().auth.getSession();
-    if(!data.session) return null;
-    const uid = data.session.user.id;
-    const { data: prof } = await sb().from('profiles').select('*').eq('id', uid).single();
-    if(!prof) return null;
-    this._cache = { id: uid, login: prof.login, niveau: prof.niveau, role: prof.role };
+    if(!data?.session) return null;
+    const uid  = data.session.user.id;
+    const meta = data.session.user.user_metadata || {};
+    // D'abord essayer via la table profiles
+    try {
+      const { data: prof, error } = await sb()
+        .from('profiles').select('*').eq('id', uid).single();
+      if(prof && !error) {
+        this._cache = { id: uid, login: prof.login, niveau: prof.niveau, role: prof.role };
+        return this._cache;
+      }
+    } catch(e) { console.warn('profiles query:', e); }
+    // Fallback : utiliser les métadonnées auth directement
+    const login  = meta.login  || data.session.user.email?.split('@')[0] || 'utilisateur';
+    const niveau = meta.niveau || 'N1';
+    const role   = meta.role   || 'adherent';
+    this._cache = { id: uid, login, niveau, role };
     return this._cache;
   },
   clear() { this._cache = null; },
@@ -1262,14 +1274,21 @@ function bindMustChangePassword(){
 
 // -- PAGE PROFIL ADHÉRENT -----------------------------------------
 async function renderProfilAsync(){
-  const s=await Session.get();
+  const s = await Promise.race([
+    Session.get(),
+    new Promise(r=>setTimeout(()=>r(null), 4000))
+  ]);
   if(!s){
-    // Session expirée ou non connecté
     setTimeout(()=>App.go('login'),100);
-    return '<div style="min-height:60vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1rem"><div style="font-size:2rem">🔒</div><p style="color:var(--gris-texte)">Redirection vers la connexion...</p></div>';
+    return '<div style="min-height:60vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1rem"><div style="font-size:2rem">🔒</div><p style="color:var(--gris-texte)">Session expirée — redirection...</p></div>';
   }
-  // Charger le carnet de plongée pour cet utilisateur
-  DB_R = await DB.getRealisees(s.id);
+  // Charger le carnet de plongée pour cet utilisateur (avec timeout)
+  try {
+    DB_R = await Promise.race([
+      DB.getRealisees(s.id),
+      new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),4000))
+    ]);
+  } catch(e) { DB_R = []; console.warn('realisees:', e.message); }
   const today=todayStr();
   const realisees=getRealiseesUser(s.id).sort((a,b)=>b.date.localeCompare(a.date));
   const nbMer=countPlongeesMer(s.id);
