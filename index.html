@@ -514,38 +514,57 @@ function sb() {
 // -- SESSION ------------------------------------------------------
 const Session = {
   _cache: null,
+  _SK: 'lc_sess', // clé sessionStorage fallback
   async get() {
     if(this._cache) return this._cache;
-    const { data } = await sb().auth.getSession();
-    if(!data?.session) return null;
-    const uid  = data.session.user.id;
-    const meta = data.session.user.user_metadata || {};
-    // D'abord essayer via la table profiles
+    // Essayer Supabase Auth
     try {
-      const { data: prof, error } = await sb()
-        .from('profiles').select('*').eq('id', uid).single();
-      if(prof && !error) {
-        this._cache = { id: uid, login: prof.login, niveau: prof.niveau, role: prof.role };
+      const { data } = await sb().auth.getSession();
+      if(data?.session) {
+        const uid  = data.session.user.id;
+        const meta = data.session.user.user_metadata || {};
+        // Essayer la table profiles
+        try {
+          const { data: prof } = await sb()
+            .from('profiles').select('*').eq('id', uid).single();
+          if(prof) {
+            this._cache = { id: uid, login: prof.login, niveau: prof.niveau, role: prof.role };
+            // Sauvegarder en sessionStorage comme fallback
+            try { sessionStorage.setItem(this._SK, JSON.stringify(this._cache)); } catch(e){}
+            return this._cache;
+          }
+        } catch(e) { console.warn('profiles:', e.message); }
+        // Fallback métadonnées
+        this._cache = {
+          id: uid,
+          login:  meta.login  || data.session.user.email?.split('@')[0] || 'utilisateur',
+          niveau: meta.niveau || 'N1',
+          role:   meta.role   || 'adherent'
+        };
+        try { sessionStorage.setItem(this._SK, JSON.stringify(this._cache)); } catch(e){}
         return this._cache;
       }
-    } catch(e) { console.warn('profiles query:', e); }
-    // Fallback : utiliser les métadonnées auth directement
-    const login  = meta.login  || data.session.user.email?.split('@')[0] || 'utilisateur';
-    const niveau = meta.niveau || 'N1';
-    const role   = meta.role   || 'adherent';
-    this._cache = { id: uid, login, niveau, role };
-    return this._cache;
+    } catch(e) { console.warn('Auth.getSession:', e.message); }
+    // Fallback sessionStorage (si Tracking Prevention bloque le CDN)
+    try {
+      const saved = sessionStorage.getItem(this._SK);
+      if(saved) { this._cache = JSON.parse(saved); return this._cache; }
+    } catch(e) {}
+    return null;
   },
-  clear() { this._cache = null; },
+  clear() {
+    this._cache = null;
+    try { sessionStorage.removeItem(this._SK); } catch(e) {}
+  },
   async isLogged() { return !!(await this.get()); },
-  async isAdmin() { const s=await this.get(); return s?.role==='admin'; },
+  async isAdmin()  { const s=await this.get(); return s?.role==='admin'; },
 };
 
 // -- AUTH ---------------------------------------------------------
 const Auth = {
   async login(login, password) {
     // Trouver l'email fictif associé au login
-    const email = login.toLowerCase().trim() + '@loubineclub.local';
+    const email = login.toLowerCase().trim().replace(/[^a-z0-9]/g, '') + '@loubineclub.internal';
     const { data, error } = await sb().auth.signInWithPassword({ email, password });
     if(error || !data.session) return null;
     Session.clear();
@@ -572,14 +591,15 @@ const Users = {
     return data;
   },
   async create(login, password, niveau, role='adherent') {
-    const email = login.toLowerCase().trim() + '@loubineclub.local';
-    // Appel à la fonction Edge (ou service role) — pour V2 on utilise signUp
+    const email = login.toLowerCase().trim().replace(/[^a-z0-9]/g, '') + '@loubineclub.internal';
     const { data, error } = await sb().auth.signUp({
       email, password,
       options: { data: { login, niveau, role } }
     });
-    if(error) { console.error(error); return false; }
-    return true;
+    if(error) { console.error(error); return { ok: false, message: error.message }; }
+    // Vérifier si l'user existe déjà (signUp ne retourne pas d'erreur dans ce cas)
+    if(!data?.user) return { ok: false, message: 'Cet identifiant existe déjà.' };
+    return { ok: true };
   },
   async update(id, changes) {
     const { error } = await sb().from('profiles').update(changes).eq('id', id);
@@ -653,9 +673,11 @@ let nextPId = 1, nextIId = 1, nextRId = 1;
 async function reloadAll() {
   DB_P = await DB.getPlongees();
   DB_I = await DB.getInscriptions();
-  // DB_R chargé à la demande (par user)
   if(DB_P.length) nextPId = Math.max(...DB_P.map(p=>p.id), 0) + 1;
   if(DB_I.length) nextIId = Math.max(...DB_I.map(i=>i.id), 0) + 1;
+  // Recharger le cache session pour être sûr
+  Session._cache = null;
+  await Session.get();
 }
 
 // saveAll : maintenu pour compat mais ne fait rien (Supabase gère)
@@ -1106,8 +1128,17 @@ async function submitInscription(pid){
     refreshSortiesList();
     showToast('✅ Inscription confirmée ! À bientôt dans l\'eau.');
   } catch(e) {
-    al.innerHTML=`<div class="alert alert-error">✗ Erreur : ${e.message||'inscription impossible'}</div>`;
-    if(btn){btn.disabled=false;btn.innerHTML='Valider mon inscription';}
+    // Duplicate key = déjà inscrit (cache local désynchronisé)
+    if(e.message && e.message.includes('duplicate key')) {
+      // Recharger les inscriptions depuis Supabase
+      DB_I = await DB.getInscriptions();
+      closeModal('modal-inscription');
+      refreshSortiesList();
+      showToast('✅ Vous étiez déjà inscrit à cette sortie !');
+    } else {
+      al.innerHTML=`<div class="alert alert-error">✗ Erreur : ${e.message||'inscription impossible'}</div>`;
+      if(btn){btn.disabled=false;btn.innerHTML='Valider mon inscription';}
+    }
   }
 }
 function refreshSortiesList(){
@@ -1839,7 +1870,7 @@ function openModalNouvelAdherent(){
     </div>
     <div class="form-group"><label class="form-label">Mot de passe temporaire <span>*</span></label>
       <input type="text" class="form-input" id="adh-pwd" placeholder="À communiquer à l'adhérent">
-      <small class="text-muted" style="display:block;margin-top:.3rem">L'adhérent devra le changer à sa première connexion.</small>
+      <small class="text-muted" style="display:block;margin-top:.3rem">Minimum 6 caractères. L'adhérent pourra le changer depuis son profil.</small>
     </div>
     <div style="display:flex;gap:.75rem;justify-content:flex-end">
       <button class="btn btn-ghost" onclick="closeModal('modal-adherent')">Annuler</button>
@@ -1856,10 +1887,12 @@ async function saveNouvelAdherent(){
   const al    = document.getElementById('adh-alert');
   const btn   = document.querySelector('#modal-adherent-body .btn-primary');
   if(!login||!pwd){al.innerHTML=`<div class="alert alert-error">✗ Identifiant et mot de passe requis.</div>`;return;}
+  if(pwd.length<6){al.innerHTML=`<div class="alert alert-error">✗ Le mot de passe doit faire au moins 6 caractères (exigence Supabase).</div>`;return;}
   if(btn){btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Création...';}
-  const ok = await Users.create(login, pwd, niveau, role);
-  if(!ok){
-    al.innerHTML=`<div class="alert alert-error">✗ Cet identifiant existe déjà ou erreur serveur.</div>`;
+  const result = await Users.create(login, pwd, niveau, role);
+  if(!result?.ok){
+    const msg = result?.message || 'Erreur serveur.';
+    al.innerHTML=`<div class="alert alert-error">✗ ${msg}</div>`;
     if(btn){btn.disabled=false;btn.innerHTML="Créer l'adhérent";}
     return;
   }
