@@ -563,12 +563,20 @@ const Session = {
 // -- AUTH ---------------------------------------------------------
 const Auth = {
   async login(login, password) {
-    // Trouver l'email fictif associé au login
-    const email = login.toLowerCase().trim().replace(/[^a-z0-9]/g, '') + '@loubineclub.internal';
-    const { data, error } = await sb().auth.signInWithPassword({ email, password });
-    if(error || !data.session) return null;
-    Session.clear();
-    return await Session.get();
+    // Chercher l'email réel dans profiles
+    try {
+      const { data: profileData } = await sb()
+        .from('profiles').select('email').eq('login', login.trim()).single();
+      if(profileData?.email) {
+        const { data, error } = await sb().auth.signInWithPassword({
+          email: profileData.email, password
+        });
+        if(error || !data.session) return null;
+        Session.clear();
+        return await Session.get();
+      }
+    } catch(e) { console.warn('login lookup:', e.message); }
+    return null;
   },
   async logout() {
     await sb().auth.signOut();
@@ -590,15 +598,14 @@ const Users = {
     const { data } = await sb().from('profiles').select('*').eq('id', id).single();
     return data;
   },
-  async create(login, password, niveau, role='adherent') {
-    const email = login.toLowerCase().trim().replace(/[^a-z0-9]/g, '') + '@loubineclub.internal';
+  async create(login, email, password, niveau, role='adherent') {
     const { data, error } = await sb().auth.signUp({
-      email, password,
+      email: email.trim(),
+      password,
       options: { data: { login, niveau, role } }
     });
     if(error) { console.error(error); return { ok: false, message: error.message }; }
-    // Vérifier si l'user existe déjà (signUp ne retourne pas d'erreur dans ce cas)
-    if(!data?.user) return { ok: false, message: 'Cet identifiant existe déjà.' };
+    if(!data?.user) return { ok: false, message: 'Cet email existe déjà.' };
     return { ok: true };
   },
   async update(id, changes) {
@@ -1857,6 +1864,9 @@ function openModalNouvelAdherent(){
     <div id="adh-alert"></div>
     <div class="form-group"><label class="form-label">Identifiant (nom ou surnom) <span>*</span></label>
       <input type="text" class="form-input" id="adh-login" placeholder="Ex : Dupont ou Momo"></div>
+    <div class="form-group"><label class="form-label">Email <span>*</span></label>
+      <input type="email" class="form-input" id="adh-email" placeholder="prenom.nom@email.fr">
+      <small class="text-muted" style="display:block;margin-top:.3rem">Utilisé pour la connexion. Non visible par les autres adhérents.</small></div>
     <div class="form-group"><label class="form-label">Niveau FFESSM <span>*</span></label>
       <select class="form-select" id="adh-niveau">
         ${['Baptême','N1','N2','N3','N4/GP','MF1','MF2'].map(n=>`<option value="${n}">${n}</option>`).join('')}
@@ -1881,15 +1891,17 @@ function openModalNouvelAdherent(){
 
 async function saveNouvelAdherent(){
   const login = document.getElementById('adh-login').value.trim();
+  const email = document.getElementById('adh-email').value.trim();
   const niveau= document.getElementById('adh-niveau').value;
   const role  = document.getElementById('adh-role').value;
   const pwd   = document.getElementById('adh-pwd').value;
   const al    = document.getElementById('adh-alert');
   const btn   = document.querySelector('#modal-adherent-body .btn-primary');
-  if(!login||!pwd){al.innerHTML=`<div class="alert alert-error">✗ Identifiant et mot de passe requis.</div>`;return;}
-  if(pwd.length<6){al.innerHTML=`<div class="alert alert-error">✗ Le mot de passe doit faire au moins 6 caractères (exigence Supabase).</div>`;return;}
-  if(btn){btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Création...';}
-  const result = await Users.create(login, pwd, niveau, role);
+  if(!login||!email||!pwd){al.innerHTML=`<div class="alert alert-error">✗ Identifiant, email et mot de passe sont requis.</div>`;return;}
+  if(!email.includes('@')){al.innerHTML=`<div class="alert alert-error">✗ Email invalide.</div>`;return;}
+  if(pwd.length<6){al.innerHTML=`<div class="alert alert-error">✗ Le mot de passe doit faire au moins 6 caractères.</div>`;return;}
+  if(btn){btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Création…';}
+  const result = await Users.create(login, email, pwd, niveau, role);
   if(!result?.ok){
     const msg = result?.message || 'Erreur serveur.';
     al.innerHTML=`<div class="alert alert-error">✗ ${msg}</div>`;
