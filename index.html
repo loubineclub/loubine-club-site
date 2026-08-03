@@ -754,7 +754,7 @@ const App={
       case 'contact':    c.innerHTML=renderContact(); bindContact(); break;
       case 'login':      c.innerHTML=renderLoginPage(); bindLoginPage(); break;
       case 'profil':     c.innerHTML=await renderProfilAsync(); bindProfil(); break;
-      case 'admin':      c.innerHTML=renderAdmin(); bindAdmin(); break;
+      case 'admin':      c.innerHTML=renderAdmin(); await bindAdmin(); break;
       default:c.innerHTML='<div style="min-height:70vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1rem"><div style="font-size:4rem">🐟</div><p>Page introuvable</p><a href="#accueil" class="btn btn-primary">Retour accueil</a></div>';
     }
   },
@@ -1471,14 +1471,18 @@ function renderAdmin(){return`<div style="padding-top:var(--nav)"><div class="ad
   <main class="admin-content" id="admin-main">${renderDashboard()}</main>
 </div></div>`;}
 
-function bindAdmin(){
+async function bindAdmin(){
+  // Recharger le dashboard immédiatement avec données fraîches
+  const main = document.getElementById('admin-main');
+  if(main) main.innerHTML = await renderDashboard();
+
   document.querySelectorAll('.admin-nav-item[data-view]').forEach(item=>item.addEventListener('click',async()=>{
     document.querySelectorAll('.admin-nav-item').forEach(i=>i.classList.remove('active'));
     item.classList.add('active');
     const m=document.getElementById('admin-main');
     switch(item.dataset.view){
-      case 'dashboard':    m.innerHTML=renderDashboard(); break;
-      case 'plongees':     m.innerHTML=renderAdminPlongees(); break;
+      case 'dashboard':    m.innerHTML=await renderDashboard(); break;
+      case 'plongees':     m.innerHTML=await renderAdminPlongees(); break;
       case 'all-inscrits': m.innerHTML=renderAllInscrits(); break;
       case 'adherents':    m.innerHTML=await renderAdherents(); bindAdherents(); break;
     }
@@ -1486,7 +1490,10 @@ function bindAdmin(){
   document.getElementById('admin-logout')?.addEventListener('click',async()=>{await Auth.logout();await App.updateNav();App.go('accueil');});
 }
 
-function renderDashboard(){
+async function renderDashboard(){
+  // Toujours recharger depuis Supabase pour avoir les données fraîches
+  DB_P = await DB.getPlongees();
+  DB_I = await DB.getInscriptions();
   const fut=DB_P.filter(p=>p.date>=todayStr());
   return`<h2 class="admin-page-title">Tableau de bord</h2>
   <div class="stat-cards">
@@ -1521,7 +1528,10 @@ function renderDashboard(){
   </div>`;
 }
 
-function renderAdminPlongees(){return`
+async function renderAdminPlongees(){
+  DB_P = await DB.getPlongees();
+  DB_I = await DB.getInscriptions();
+  return`
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;flex-wrap:wrap;gap:1rem">
     <h2 class="admin-page-title" style="margin:0">Sorties plongée</h2>
     <div style="display:flex;gap:.5rem">
@@ -1653,7 +1663,7 @@ async function deletePlongee(id){
   const view = activeView?.dataset?.view || 'dashboard';
   const m = document.getElementById('admin-main');
   if(view==='plongees') m.innerHTML=renderAdminPlongees();
-  else m.innerHTML=renderDashboard();
+  else m.innerHTML=await renderDashboard();
 }
 
 // -- MODAL INSCRITS ------------------------------------------------
