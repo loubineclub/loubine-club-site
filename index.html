@@ -562,21 +562,13 @@ const Session = {
 
 // -- AUTH ---------------------------------------------------------
 const Auth = {
-  async login(login, password) {
-    // Chercher l'email réel dans profiles
+  async login(email, password) {
     try {
-      const { data: profileData } = await sb()
-        .from('profiles').select('email').eq('login', login.trim()).single();
-      if(profileData?.email) {
-        const { data, error } = await sb().auth.signInWithPassword({
-          email: profileData.email, password
-        });
-        if(error || !data.session) return null;
-        Session.clear();
-        return await Session.get();
-      }
-    } catch(e) { console.warn('login lookup:', e.message); }
-    return null;
+      const { data, error } = await sb().auth.signInWithPassword({ email: email.trim(), password });
+      if(error || !data.session) return null;
+      Session.clear();
+      return await Session.get();
+    } catch(e) { console.warn('login:', e.message); return null; }
   },
   async logout() {
     await sb().auth.signOut();
@@ -1258,8 +1250,8 @@ function renderLoginPage(){
       <div class="login-sub">Espace membres — Loubine Club</div>
     </div>
     <div id="login-alert"></div>
-    <div class="form-group"><label class="form-label">Identifiant</label>
-      <input type="text" class="form-input" id="l-login" placeholder="Votre identifiant" autocomplete="username"></div>
+    <div class="form-group"><label class="form-label">Email</label>
+      <input type="email" class="form-input" id="l-login" placeholder="votre@email.fr" autocomplete="username"></div>
     <div class="form-group"><label class="form-label">Mot de passe</label>
       <input type="password" class="form-input" id="l-pwd" placeholder="••••••••" autocomplete="current-password"></div>
     <button class="btn btn-primary w-full" id="l-btn" style="margin-top:.5rem">Se connecter</button>
