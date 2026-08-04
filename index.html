@@ -1270,6 +1270,7 @@ function bindLoginPage(){
     btn.innerHTML='<span class="spinner"></span>';
     const user=await Auth.login(login,pwd);
     if(user){
+      await reloadAll();
       await App.updateNav();
       if(user.role==='admin'){ App.go('admin'); }
       else { App.go('calendrier'); }
@@ -1662,8 +1663,8 @@ async function deletePlongee(id){
   const activeView = document.querySelector('.admin-nav-item.active');
   const view = activeView?.dataset?.view || 'dashboard';
   const m = document.getElementById('admin-main');
-  if(view==='plongees') m.innerHTML=renderAdminPlongees();
-  else m.innerHTML=await renderDashboard();
+  if(view==='plongees') m.innerHTML = await renderAdminPlongees();
+  else m.innerHTML = await renderDashboard();
 }
 
 // -- MODAL INSCRITS ------------------------------------------------
@@ -1772,7 +1773,7 @@ async function validerCloture(pid){
     await DB.cloturerSortie(pid, presentIds);
     DB_P = await DB.getPlongees();
     closeModal('modal-adherent');
-    document.getElementById('admin-main').innerHTML=renderDashboard();
+    document.getElementById('admin-main').innerHTML=await renderDashboard();
     showToast('✅ Sortie clôturée avec succès.');
   } catch(e) {
     if(btn){btn.disabled=false;btn.innerHTML='✓ Valider la clôture';}
@@ -1845,13 +1846,13 @@ function renderAdherentsHtml(users, sess){
       <td>${u.role==='admin'?'<span class="badge badge-orange">Admin</span>':'<span class="badge" style="background:var(--gris-clair);color:var(--gris-texte)">Adhérent</span>'}</td>
       <td>${u.mustChange?'<span class="badge badge-red">⚠ Doit changer mdp</span>':'<span class="badge badge-green">Actif</span>'}</td>
       <td style="display:flex;gap:.35rem;flex-wrap:wrap">
-        <button class="btn btn-ghost btn-sm" onclick="openHistoriqueAdherent(${u.id})">📊 Carnet</button>
+        <button class="btn btn-ghost btn-sm" onclick="openHistoriqueAdherent('${u.id}')">📊 Carnet</button>
         ${u.id!=sess?.id?`
           ${u.role==='admin'
-            ?`<button class="btn btn-ghost btn-sm" onclick="toggleAdmin(${u.id},false)">Retirer admin</button>`
-            :`<button class="btn btn-ghost btn-sm" onclick="toggleAdmin(${u.id},true)">Passer admin</button>`}
-          <button class="btn btn-ghost btn-sm" onclick="resetPassword(${u.id})">Reset mdp</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id})">✕</button>
+            ?`<button class="btn btn-ghost btn-sm" onclick="toggleAdmin('${u.id}',false)">Retirer admin</button>`
+            :`<button class="btn btn-ghost btn-sm" onclick="toggleAdmin('${u.id}',true)">Passer admin</button>`}
+          <button class="btn btn-ghost btn-sm" onclick="resetPassword('${u.id}')">Reset mdp</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}')">✕</button>
         `:'<span style="font-size:.78rem;color:var(--gris-texte)">Compte courant</span>'}
       </td>
     </tr>`).join('')}</tbody>
@@ -1919,8 +1920,7 @@ async function saveNouvelAdherent(){
 async function toggleAdmin(id, makeAdmin){
   if(!confirm(makeAdmin?'Passer cet adhérent en administrateur ?':'Retirer les droits admin ?'))return;
   await Users.update(id,{role:makeAdmin?'admin':'adherent'});
-  const users = await Users.all();
-  document.getElementById('admin-main').innerHTML = renderAdherentsHtml(users);
+  document.getElementById('admin-main').innerHTML = await renderAdherents();
 }
 
 async function resetPassword(id){
@@ -1938,8 +1938,7 @@ async function deleteUser(id){
   const u = users.find(x=>x.id==id);
   if(!confirm(`Supprimer l'adhérent "${u?.login}" ? Cette action est irréversible.`))return;
   await Users.delete(id);
-  const newUsers = await Users.all();
-  document.getElementById('admin-main').innerHTML = renderAdherentsHtml(newUsers);
+  document.getElementById('admin-main').innerHTML = await renderAdherents();
   showToast('Adhérent supprimé.');
 }
 
