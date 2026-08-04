@@ -1647,9 +1647,12 @@ async function savePlongee(id){
   if(id&&id!='null') payload.id=parseInt(id);
   try {
     await DB.savePlongee(payload);
-    DB_P = await DB.getPlongees(); // Recharger
+    DB_P = await DB.getPlongees();
     closeModal('modal-admin-plongee');
-    document.getElementById('admin-main').innerHTML=renderAdminPlongees();
+    document.getElementById('admin-main').innerHTML = await renderDashboard();
+    // Mettre à jour le nav actif
+    document.querySelectorAll('.admin-nav-item').forEach(i=>i.classList.remove('active'));
+    document.querySelector('.admin-nav-item[data-view="dashboard"]')?.classList.add('active');
   } catch(e) {
     al.innerHTML=`<div class="alert alert-error">✗ Erreur sauvegarde : ${e.message}</div>`;
   }
@@ -1937,7 +1940,12 @@ async function deleteUser(id){
   const users = await Users.all();
   const u = users.find(x=>x.id==id);
   if(!confirm(`Supprimer l'adhérent "${u?.login}" ? Cette action est irréversible.`))return;
-  await Users.delete(id);
+  // Supprimer profil ET marquer l'email comme réutilisable
+  await sb().from('profiles').delete().eq('id', id);
+  // Supprimer de auth.users via RPC
+  try {
+    await sb().rpc('delete_user', { user_id: id });
+  } catch(e) { console.warn('auth delete:', e.message); }
   document.getElementById('admin-main').innerHTML = await renderAdherents();
   showToast('Adhérent supprimé.');
 }
