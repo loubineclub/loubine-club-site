@@ -1,11 +1,9 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  
-  <meta name="google-site-verification" content="2MuHH_WKCdKRPPEid1lTiOFefcmvdLENdYxrO-eCV60" />
-  
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="google-site-verification" content="2MuHH_WKCdKRPPEid1lTiOFefcmvdLENdYxrO-eCV60" />
   <meta name="description" content="Loubine Club Plongée d'Andernos-les-Bains — FFESSM. Sorties sur le Bassin d'Arcachon, formations, calendrier des plongées.">
   <title>Loubine Club — Plongée Andernos</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1265,20 +1263,35 @@ function renderLoginPage(){
 }
 function bindLoginPage(){
   const go=async()=>{
-    const login=document.getElementById('l-login').value.trim();
+    const email=document.getElementById('l-login').value.trim();
     const pwd=document.getElementById('l-pwd').value;
     const al=document.getElementById('login-alert');
     const btn=document.getElementById('l-btn');
+
+    // Rate limiting
+    if(LoginGuard.isBlocked()){
+      const mins=Math.ceil(LoginGuard.remainingSeconds()/60);
+      al.innerHTML=`<div class="alert alert-error">🔒 Trop de tentatives. Réessayez dans ${mins} minute${mins>1?'s':''}.</div>`;
+      return;
+    }
+
     btn.disabled=true;
     btn.innerHTML='<span class="spinner"></span>';
-    const user=await Auth.login(login,pwd);
+    const user=await Auth.login(email,pwd);
     if(user){
+      LoginGuard.recordSuccess();
       await reloadAll();
       await App.updateNav();
+      AutoLogout.start();
       if(user.role==='admin'){ App.go('admin'); }
       else { App.go('calendrier'); }
     } else {
-      al.innerHTML=`<div class="alert alert-error">✗ Identifiant ou mot de passe incorrect.</div>`;
+      LoginGuard.recordFail();
+      const left=LoginGuard.attemptsLeft();
+      const msg=left>0
+        ? `✗ Email ou mot de passe incorrect. ${left} tentative${left>1?'s':''} restante${left>1?'s':''}.`
+        : `🔒 Compte bloqué 15 minutes suite à trop de tentatives.`;
+      al.innerHTML=`<div class="alert alert-error">${msg}</div>`;
       document.getElementById('l-pwd').value='';
       btn.disabled=false;
       btn.innerHTML='Se connecter';
@@ -1357,7 +1370,7 @@ async function renderProfilAsync(){
 
   return `<div class="page-header"><div class="container">
     <h1>Mon <span style="color:var(--bleu-lagon)">Profil</span></h1>
-    <p>Connecté en tant que <strong>${esc(s.login)}</strong> · Niveau <strong>${esc(s.niveau)}</strong> · ${s.role==='admin'?'<span style="color:var(--orange-coral);font-weight:700">Administrateur</span>':'Adhérent'}</p>
+    <p>Connecté en tant que <strong>${esc(s.login)}</strong> · Niveau <strong>${esc(s.niveau)}</strong> · ${s.role==='admin'?'<span style="color:var(--orange-coral);font-weight:700">Administrateur</span>':'Adhérent'} · <span style="color:var(--gris-texte);font-size:.85rem">⏱ Déconnexion auto après 30 min d'inactivité</span></p>
   </div></div>
 
   <section class="section">
@@ -1434,7 +1447,7 @@ async function renderProfilAsync(){
               <input type="password" class="form-input" id="p-new2" placeholder="Confirmer"></div>
             <div style="display:flex;gap:.75rem;flex-wrap:wrap">
               <button class="btn btn-primary" id="p-save">Enregistrer</button>
-              <button class="btn btn-danger" onclick="Auth.logout().then(()=>App.updateNav()).then(()=>App.go('accueil'))">Se déconnecter</button>
+              <button class="btn btn-danger" onclick="AutoLogout.stop();Auth.logout().then(()=>App.updateNav()).then(()=>App.go('accueil'))">Se déconnecter</button>
             </div>
           </div></div>
         </div>
@@ -1491,7 +1504,7 @@ async function bindAdmin(){
       case 'adherents':    m.innerHTML=await renderAdherents(); bindAdherents(); break;
     }
   }));
-  document.getElementById('admin-logout')?.addEventListener('click',async()=>{await Auth.logout();await App.updateNav();App.go('accueil');});
+  document.getElementById('admin-logout')?.addEventListener('click',async()=>{AutoLogout.stop();await Auth.logout();await App.updateNav();App.go('accueil');});
 }
 
 async function renderDashboard(){
@@ -2300,6 +2313,79 @@ async function exportCarnetPDF(userId){
   w.document.close();
   w.onload = ()=>{ w.focus(); w.print(); };
 }
+
+
+// ================================================================
+// SÉCURITÉ — Rate limiting login + Auto-déconnexion
+// ================================================================
+
+// -- RATE LIMITING LOGIN (6 tentatives, blocage 15 min) ----------
+const LoginGuard = {
+  _key: 'lc_login_attempts',
+  _data() {
+    try { return JSON.parse(localStorage.getItem(this._key) || '{"count":0,"blockedUntil":0}'); }
+    catch { return {count:0, blockedUntil:0}; }
+  },
+  _save(d) { try { localStorage.setItem(this._key, JSON.stringify(d)); } catch(e){} },
+  isBlocked() {
+    const d = this._data();
+    if(d.blockedUntil && Date.now() < d.blockedUntil) return true;
+    if(d.blockedUntil && Date.now() >= d.blockedUntil) {
+      this._save({count:0, blockedUntil:0}); // reset après expiration
+    }
+    return false;
+  },
+  remainingSeconds() {
+    const d = this._data();
+    return Math.ceil((d.blockedUntil - Date.now()) / 1000);
+  },
+  recordFail() {
+    const d = this._data();
+    d.count = (d.count||0) + 1;
+    if(d.count >= 6) {
+      d.blockedUntil = Date.now() + 15 * 60 * 1000; // 15 minutes
+      d.count = 0;
+    }
+    this._save(d);
+  },
+  recordSuccess() {
+    this._save({count:0, blockedUntil:0});
+  },
+  attemptsLeft() {
+    const d = this._data();
+    return Math.max(0, 6 - (d.count||0));
+  }
+};
+
+// -- AUTO-DÉCONNEXION (30 min d'inactivité) ----------------------
+const AutoLogout = {
+  _timer: null,
+  _DELAY: 30 * 60 * 1000, // 30 minutes
+  _lastKey: 'lc_last_activity',
+  reset() {
+    try { localStorage.setItem(this._lastKey, Date.now()); } catch(e) {}
+    clearTimeout(this._timer);
+    this._timer = setTimeout(() => this._logout(), this._DELAY);
+  },
+  start() {
+    // Écouter toute activité utilisateur
+    ['click','keydown','mousemove','touchstart','scroll'].forEach(evt => {
+      document.addEventListener(evt, () => this.reset(), { passive: true });
+    });
+    this.reset();
+  },
+  stop() {
+    clearTimeout(this._timer);
+  },
+  async _logout() {
+    const s = Session._cache;
+    if(!s) return;
+    await Auth.logout();
+    await App.updateNav();
+    App.go('login');
+    showToast('⏱ Déconnexion automatique après 30 min d\'inactivité.', 'info');
+  }
+};
 
 // -- TOAST -------------------------------------------------------
 function showToast(msg, type='success'){
