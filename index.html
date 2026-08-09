@@ -419,8 +419,8 @@ tbody tr:hover td{background:var(--blanc-casse)}
       <div class="footer-col-title">Liens utiles</div>
       <ul class="footer-links">
         <li><a href="https://www.ffessm.fr" target="_blank">FFESSM</a></li>
-        <li><a href="https://maree.shom.fr/destinations/arcachon" target="_blank">Marées Arcachon</a></li>
-        <li><a href="https://marine.meteofrance.fr" target="_blank">Météo marine</a></li>
+        <li><a href="https://maree.info/135" target="_blank">Marées Cap Ferret</a></li>
+        <li><a href="https://marine.meteoconsult.fr/meteo-marine/bulletin-detaille/spot-de-glisse-104/previsions-meteo-cap-ferret-aujourdhui" target="_blank">Météo marine</a></li>
         <li><a href="http://loubine.over-blog.net/" target="_blank">Notre blog</a></li>
       </ul>
     </div>
@@ -849,20 +849,7 @@ function renderClub(){
       ${[{i:'🛡️',t:'Sécurité',d:'Règles FFESSM, encadrement qualifié, briefing avant chaque plongée.'},{i:'🤝',t:'Convivialité',d:'Esprit associatif, sorties partagées, casse-croûte du samedi !'},{i:'🌊',t:'Milieu naturel',d:'Zéro déchet, respect de la faune du Bassin, plongée responsable.'},{i:'📚',t:'Formation',d:'Baptême, N1, N2, théorie N3, RIFA plongée — à votre rythme.'}].map(v=>`<div class="card" style="padding:1.6rem;text-align:center"><div style="font-size:2.2rem;margin-bottom:.9rem">${v.i}</div><div class="card-title" style="font-size:1rem;margin-bottom:.45rem">${v.t}</div><p style="font-size:.85rem;color:var(--gris-texte)">${v.d}</p></div>`).join('')}
     </div>
   </div></section>
-  <section class="section" style="background:var(--blanc)"><div class="container">
-    <h2 class="section-title" style="text-align:center;margin-bottom:.5rem">Le <span>Bureau</span></h2>
-    <p class="section-sub" style="text-align:center;margin:0 auto 3rem">Une équipe de bénévoles passionnés à votre service.</p>
-    <div class="encadrants-grid">
-      ${[
-        {n:'Valérie CUGNENC',r:'Présidente',niv:'',e:'👩'},
-        {n:'Christian FAYRET',r:'Vice-Président & Dir. Technique',niv:'MF2',e:'👨'},
-        {n:'Fadela KISMOUNE',r:'Secrétaire',niv:'',e:'👩'},
-        {n:'Joël TROPIS',r:'Secrétaire Adjoint',niv:'',e:'🧔'},
-        {n:'Thierry COHELEACH',r:'Trésorier',niv:'',e:'👨'},
-        {n:'Elodie DECOUDRAS',r:'Trésorière Adjointe',niv:'',e:'👩'},
-      ].map(p=>`<div class="encadrant-card"><div class="encadrant-avatar">${p.e}</div><div class="encadrant-name">${esc(p.n)}</div><div class="encadrant-role">${esc(p.r)}</div>${p.niv?`<span class="encadrant-niveau">${p.niv}</span>`:''}</div>`).join('')}
-    </div>
-  </div></section>
+
   <section class="section" style="background:var(--blanc-casse)"><div class="container" style="text-align:center">
     <h2 class="section-title">Activités du <span>club</span></h2>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:1.1rem;margin-top:2rem">
@@ -1151,12 +1138,12 @@ function refreshSortiesList(){
 function renderInfos(){
   return`<div class="page-header"><div class="container"><h1>Infos <span style="color:var(--bleu-lagon)">utiles</span></h1></div></div>
   <section class="section"><div class="container">
-    <div class="info-tabs">${['Tarifs','Horaires','Sites de plongée','Météo & Marées','Documents','Liens FFESSM'].map((t,i)=>`<div class="info-tab${i===0?' active':''}" data-tab="${t}">${t}</div>`).join('')}</div>
+    <div class="info-tabs">${['Tarifs','Horaires','Sites de plongée','Météo & Marées'].map((t,i)=>`<div class="info-tab${i===0?' active':''}" data-tab="${t}">${t}</div>`).join('')}</div>
     <div id="tab-content">${renderTarifs()}</div>
   </div></section>`;
 }
 function bindInfos(){
-  const MAP={Tarifs:renderTarifs,Horaires:renderHoraires,'Sites de plongée':renderSites,'Météo & Marées':renderMeteo,Documents:renderDocuments,'Liens FFESSM':renderLiens};
+  const MAP={Tarifs:renderTarifs,Horaires:renderHoraires,'Sites de plongée':renderSites,'Météo & Marées':renderMeteo};
   document.querySelectorAll('.info-tab').forEach(t=>t.addEventListener('click',()=>{
     document.querySelectorAll('.info-tab').forEach(x=>x.classList.remove('active'));
     t.classList.add('active');
@@ -1171,22 +1158,27 @@ function renderHoraires(){return`<div class="horaires-grid">
   ${[{i:'🏊',t:'Fosse & plongée',l:['Mercredi 20h30 – 22h','Samedi 12h15 – 13h30','Mardi 20h – 21h (dès avril)'],lieu:'Piscine F.-Cazenave, rue des Coquelicots'},{i:'🏃',t:'Nage avec palmes',l:['Vendredi 20h – 21h'],lieu:'Piscine F.-Cazenave, Andernos'},{i:'📅',t:'Réunions de bureau',l:['Selon convocations'],lieu:''},{i:'🤿',t:'Sorties mer',l:['Selon calendrier club','Généralement le week-end'],lieu:'Port de plaisance, Andernos'}].map(h=>`<div class="horaire-card"><div class="horaire-icon">${h.i}</div><div class="horaire-title">${h.t}</div>${h.l.map(x=>`<div class="horaire-line">${x}</div>`).join('')}${h.lieu?`<p style="font-size:.78rem;color:var(--gris-texte);margin-top:.5rem">📍 ${h.lieu}</p>`:''}</div>`).join('')}
 </div><div style="background:var(--blanc-casse);border-radius:var(--r);padding:1.1rem;margin-top:1.4rem;font-size:.85rem;color:var(--gris-texte)">ℹ️ Créneaux valables de septembre à juin. Vérifier le calendrier pour les fermetures de piscine.</div>`;}
 function renderSites(){return`<div class="sites-grid">
-  ${[{i:'🐦',n:"Île aux Oiseaux",d:"Site emblématique au cœur du Bassin. Herbiers de zostères, hippocampes, seiches, étoiles de mer. Fond 3–10m. Idéal tous niveaux.",t:['Tous niveaux','3–10m','Herbiers','Hippocampes']},{i:'🏖️',n:"Banc d'Arguin",d:"Réserve naturelle nationale. Sable blanc, raies, mulets, hippocampes. Accessible par bateau depuis Arcachon. Fond 6–15m.",t:['N1+','6–15m','Réserve','Raies']},{i:'🌊',n:"Passes du Bassin",d:"Grande Passe et Passe du Sud — courant fort, plongée en dérive. Site technique. Réservé plongeurs confirmés.",t:['N2+ confirmé','Variable','Courant','Technique']},{i:'🌿',n:"Crastes & estran",d:"Zones de marais littoraux en bordure du Bassin. Observation de la faune intertidale. Accessible à marée montante.",t:['Tous niveaux','Faible prof.','Marée','Faune locale']},{i:'⚓',n:"Épaves du Bassin",d:"Petites épaves (barges, chalutiers) à 8–18m. Gorgones, anémones, congres, vie fixée abondante.",t:['N1+','8–18m','Épaves','Vie fixée']},{i:'🐚',n:"Bordures ostréicoles",d:"Tables ostréicoles immergées : crevettes, crabes, bigorneaux. Snorkeling accessible à tous.",t:['Tous niveaux','0–5m','Snorkeling','Ostréiculture']}].map(s=>`<div class="site-item"><div class="site-icon">${s.i}</div><div><div class="site-name">${s.n}</div><div class="site-desc">${s.d}</div><div class="site-tags">${s.t.map(x=>`<span class="site-tag">${x}</span>`).join('')}</div></div></div>`).join('')}
+  ${[
+    {i:'⚓',n:"Hortense — Cap Ferret",d:"Enrochement artificiel situé au Cap Ferret côté Bassin. Sur le fond jusqu'à 30m, un blockhaus englouti, deux épaves, une statue de dauphin et une Vénus. Les perrés sont tapissés d'anémones-bijoux (corynactis) de toutes les couleurs. Faune abondante : congres, araignées de mer, étrilles, seiches, raies torpilles et balistes.",t:['Jusqu\u0027à 30m','Bassin Arcachon','Blockhaus','Épaves']},
+    {i:'🔲',n:"Blockhaus — Dune du Pilat",d:"Vestiges engloutis de la Seconde Guerre mondiale situés au pied de la Dune du Pilat. Ancienne station radar de la marine allemande composée de 3 blockhaus, recouverts d'anémones. Biodiversité remarquable.",t:['17m','Océan Atlantique','Blockhaus','Histoire']},
+    {i:'🌿',n:"L'Herbe — Herbiers",d:"Herbiers de zostères du Bassin abritant des hippocampes pour qui sait les chercher. Ces poissons insolites nagent à la verticale et se déplacent très lentement. Soles, seiches, nudibranches. Site calme, idéal pour les baptêmes.",t:['3–10m','Bassin Arcachon','Hippocampes','Herbiers']},
+    {i:'⚙️',n:"Le Chariot — Épave",d:"Engin sous-marin à chenilles gisant par 28–30m de fond, abandonné au début des années 70. Véritable HLM à congres sous une nuée de tacauds. Faune fixée abondante. Météo parfaite requise.",t:['28–30m','Océan Atlantique','Épave unique','Congres']}
+  ].map(s=>`<div class="site-item"><div class="site-icon">${s.i}</div><div><div class="site-name">${s.n}</div><div class="site-desc">${s.d}</div><div class="site-tags">${s.t.map(x=>`<span class="site-tag">${x}</span>`).join('')}</div></div></div>`).join('')}
 </div>`;}
 function renderMeteo(){return`
 <h3 style="font-family:var(--font-d);font-size:1.2rem;font-weight:700;text-transform:uppercase;margin-bottom:.75rem;color:var(--bleu-abyssal)">Marées — Bassin d'Arcachon</h3>
 <p style="font-size:.86rem;color:var(--gris-texte);margin-bottom:1.2rem">Le Bassin d'Arcachon présente de forts coefficients de marée. Les conditions de plongée dépendent directement des horaires et coefficients.</p>
-<a href="https://maree.info/31" target="_blank" class="card" style="display:inline-flex;align-items:center;gap:1.1rem;padding:1.1rem 1.5rem;text-decoration:none;margin-bottom:2rem;max-width:420px">
+<a href="https://maree.info/135" target="_blank" class="card" style="display:inline-flex;align-items:center;gap:1.1rem;padding:1.1rem 1.5rem;text-decoration:none;margin-bottom:2rem;max-width:420px">
   <div style="font-size:2rem">📊</div>
   <div>
-    <div style="font-weight:700;color:var(--bleu-abyssal);margin-bottom:.2rem">Coefficients de marée — Arcachon</div>
-    <div style="font-size:.78rem;color:var(--gris-texte)">Prévisions coefficients Bassin d'Arcachon</div>
-    <div style="font-size:.72rem;color:var(--bleu-lagon);margin-top:.2rem">maree.info/31 →</div>
+    <div style="font-weight:700;color:var(--bleu-abyssal);margin-bottom:.2rem">Marées Cap Ferret — Bassin d'Arcachon</div>
+    <div style="font-size:.78rem;color:var(--gris-texte)">Horaires, hauteurs et coefficients de marée</div>
+    <div style="font-size:.72rem;color:var(--bleu-lagon);margin-top:.2rem">maree.info/135 →</div>
   </div>
 </a>
 <h3 style="font-family:var(--font-d);font-size:1.2rem;font-weight:700;text-transform:uppercase;margin-bottom:.75rem;color:var(--bleu-abyssal)">Météo marine</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:.9rem">
-  ${[{n:'Météo France Marine',u:'https://marine.meteofrance.fr',e:'⛅',d:'Bulletin côtier Atlantique'},{n:'Windy — Arcachon',u:'https://www.windy.com/?44.66,-1.17,11',e:'💨',d:'Vent, vagues, visibilité Arcachon'}].map(l=>`<a href="${l.u}" target="_blank" class="card" style="display:block;padding:1.1rem;text-decoration:none"><div style="font-size:1.6rem;margin-bottom:.4rem">${l.e}</div><div style="font-weight:700;color:var(--bleu-abyssal);margin-bottom:.2rem;font-size:.86rem">${l.n}</div><p style="font-size:.76rem;color:var(--gris-texte)">${l.d}</p></a>`).join('')}
+  ${[{n:'Météo Cap Ferret',u:'https://marine.meteoconsult.fr/meteo-marine/bulletin-detaille/spot-de-glisse-104/previsions-meteo-cap-ferret-aujourdhui',e:'⛅',d:'Prévisions marine détaillées — Cap Ferret'},{n:'Windy — Arcachon',u:'https://www.windy.com/?44.66,-1.17,11',e:'💨',d:'Vent, vagues, visibilité Arcachon'}].map(l=>`<a href="${l.u}" target="_blank" class="card" style="display:block;padding:1.1rem;text-decoration:none"><div style="font-size:1.6rem;margin-bottom:.4rem">${l.e}</div><div style="font-weight:700;color:var(--bleu-abyssal);margin-bottom:.2rem;font-size:.86rem">${l.n}</div><p style="font-size:.76rem;color:var(--gris-texte)">${l.d}</p></a>`).join('')}
 </div>`;}
 
 function renderDocuments(){return`<div style="display:grid;gap:.7rem;max-width:580px">
