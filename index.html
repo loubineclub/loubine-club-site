@@ -816,14 +816,7 @@ function renderAccueil(){
     <p style="color:rgba(255,255,255,.6);max-width:480px;margin:0 auto 2rem">Récits de plongée, photos du Bassin, vie du club... toute l'actualité sur notre blog.</p>
     <a href="http://loubine.over-blog.net/" target="_blank" class="btn btn-primary btn-lg">📰 Accéder au blog</a>
   </div></section>
-  <section class="section"><div class="container" style="text-align:center">
-    <h2 class="section-title">Rejoignez-<span>nous</span></h2>
-    <p class="section-sub" style="text-align:center;margin:0 auto 2rem">Passionné(e) de plongée ou simple curieux ? Les portes du club sont ouvertes.</p>
-    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
-      <a href="#contact" data-page="contact" class="btn btn-primary btn-lg">✉ Nous contacter</a>
-      <a href="#infos" data-page="infos" class="btn btn-ghost btn-lg">💰 Voir les tarifs</a>
-    </div>
-  </div></section>`;
+  `;
 }
 function bindAccueil(){ addBubbles(); bindSortieButtons(); }
 
@@ -848,14 +841,14 @@ function renderClub(){
     <h2 class="section-title" style="text-align:center;margin-bottom:.5rem">Nos <span>valeurs</span></h2>
     <p class="section-sub" style="text-align:center;margin:0 auto 3rem">Ce qui nous définit depuis 1994.</p>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:1.4rem">
-      ${[{i:'🛡️',t:'Sécurité',d:'Règles FFESSM, encadrement qualifié, briefing avant chaque plongée.'},{i:'🤝',t:'Convivialité',d:'Esprit associatif, sorties partagées, casse-croûte du samedi !'},{i:'🌊',t:'Milieu naturel',d:'Zéro déchet, respect de la faune du Bassin, plongée responsable.'},{i:'📚',t:'Formation',d:'Baptême, N1, N2, théorie N3, RIFA plongée — à votre rythme.'}].map(v=>`<div class="card" style="padding:1.6rem;text-align:center"><div style="font-size:2.2rem;margin-bottom:.9rem">${v.i}</div><div class="card-title" style="font-size:1rem;margin-bottom:.45rem">${v.t}</div><p style="font-size:.85rem;color:var(--gris-texte)">${v.d}</p></div>`).join('')}
+      ${[{i:'🛡️',t:'Sécurité',d:'Règles FFESSM, encadrement qualifié, briefing avant chaque plongée.'},{i:'🤝',t:'Convivialité',d:'Esprit associatif, sorties partagées, casse-croûte du samedi !'},{i:'🌊',t:'Milieu naturel',d:'Zéro déchet, respect de la faune du Bassin, plongée responsable.'},{i:'📚',t:'Formation',d:'N1, N2, Théorie N3, RIFA plongée — progression à votre rythme avec nos encadrants.'}].map(v=>`<div class="card" style="padding:1.6rem;text-align:center"><div style="font-size:2.2rem;margin-bottom:.9rem">${v.i}</div><div class="card-title" style="font-size:1rem;margin-bottom:.45rem">${v.t}</div><p style="font-size:.85rem;color:var(--gris-texte)">${v.d}</p></div>`).join('')}
     </div>
   </div></section>
 
   <section class="section" style="background:var(--blanc-casse)"><div class="container" style="text-align:center">
     <h2 class="section-title">Activités du <span>club</span></h2>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:1.1rem;margin-top:2rem">
-      ${[{i:'🏊',n:'Entraînements',d:'Fosse & piscine, 2-3 séances/semaine de sept. à juin'},{i:'🤿',n:'Sorties Bassin',d:'Plongées régulières sur l\'Arcachon toute la saison'},{i:'📚',n:'Formations',d:'Baptême, N1, N2, théorie N3, RIFA plongée'},{i:'✈️',n:'Voyages',d:'2 voyages/an en France et à l\'international'},{i:'🏆',n:'Compétitions',d:'Nage avec palmes — championnats régionaux'},{i:'☕',n:'Convivialité',d:'Espace détente, café du samedi à la piscine'}].map(a=>`<div class="card" style="padding:1.4rem;text-align:center"><div style="font-size:1.9rem;margin-bottom:.65rem">${a.i}</div><div style="font-weight:700;margin-bottom:.25rem;font-size:.9rem">${a.n}</div><p style="font-size:.8rem;color:var(--gris-texte)">${a.d}</p></div>`).join('')}
+      ${[{i:'🏊',n:'Entraînements',d:'Fosse & piscine, 2-3 séances/semaine de sept. à juin'},{i:'🤿',n:'Sorties Bassin',d:'Plongées régulières toute la saison'},{i:'📚',n:'Formations',d:'N1, N2, Théorie N3, RIFA plongée'},{i:'✈️',n:'Voyages',d:'2 voyages/an en France et à l\'international'},{i:'🏆',n:'Compétitions',d:'Nage avec palmes — championnats régionaux'},{i:'🧺',n:'Convivialité',d:'Pique-nique d\'après plongée, esprit de club'}].map(a=>`<div class="card" style="padding:1.4rem;text-align:center"><div style="font-size:1.9rem;margin-bottom:.65rem">${a.i}</div><div style="font-weight:700;margin-bottom:.25rem;font-size:.9rem">${a.n}</div><p style="font-size:.8rem;color:var(--gris-texte)">${a.d}</p></div>`).join('')}
     </div>
   </div></section>`;
 }
@@ -1011,7 +1004,7 @@ function openDetail(id){
 }
 
 // -- MODAL INSCRIPTION --------------------------------------------
-const MAT=['Bloc','Gilet stabilisateur','Détendeur','Combinaison','Ceinture de plomb','Plombs','Lampe','Palmes','Masque','Tuba','Bouée signalisation','Autre'];
+const MAT=['Bloc','Gilet stabilisateur','Détendeur','Autre'];
 
 async function openInscription(id){
   const p=DB_P.find(x=>x.id==id); if(!p)return;
@@ -1365,6 +1358,8 @@ async function renderProfilAsync(){
   return `<div class="page-header"><div class="container">
     <h1>Mon <span style="color:var(--bleu-lagon)">Profil</span></h1>
     <p>Connecté en tant que <strong>${esc(s.login)}</strong> · Niveau <strong>${esc(s.niveau)}</strong> · ${s.role==='admin'?'<span style="color:var(--orange-coral);font-weight:700">Administrateur</span>':'Adhérent'} · <span style="color:var(--gris-texte);font-size:.85rem">⏱ Déconnexion auto après 30 min d'inactivité</span></p>
+    ${certExpirant(s)?`<div class="alert alert-error" style="margin-top:.75rem">⚠️ Votre certificat médical expire le <strong>${fmtDate(certExpireDate(s))}</strong>. Pensez à le renouveler !</div>`:''}
+    ${certExpire(s)?`<div class="alert alert-error" style="margin-top:.75rem">🚫 Votre certificat médical est <strong>expiré</strong>. Contactez l'administrateur.</div>`:''}
   </div></div>
 
   <section class="section">
@@ -1416,12 +1411,16 @@ async function renderProfilAsync(){
             ${realisees.length?`<button class="btn btn-primary btn-sm" onclick="exportCarnetPDF(${s.id})">📄 PDF carnet complet</button>`:''}
           </div>
           ${realisees.length ? `<div class="table-wrap"><table>
-            <thead><tr><th>#</th><th>Date</th><th>Site</th><th>Type</th></tr></thead>
+            <thead><tr><th>#</th><th>Date</th><th>Site</th><th>Type</th><th>Prof.</th><th>Durée</th><th>Observations</th><th></th></tr></thead>
             <tbody>${realisees.slice(0,6).map((r,i)=>`<tr>
               <td style="font-size:.78rem;color:var(--gris-texte);text-align:center">${nbTotal-i}</td>
               <td style="font-size:.82rem;white-space:nowrap">${fmtDate(r.date)}</td>
               <td style="font-size:.82rem">${esc(r.titre)}</td>
               <td><span class="badge ${typeBadge(r.type)}">${typeLabel(r.type)}</span></td>
+              <td style="font-size:.82rem;text-align:center">${r.profondeur?r.profondeur+'m':'—'}</td>
+              <td style="font-size:.82rem;text-align:center">${r.duree?r.duree+'min':'—'}</td>
+              <td style="font-size:.78rem;color:var(--gris-texte);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.observations||'—')}</td>
+              <td><button class="btn btn-ghost btn-sm" onclick="ouvrirModifCarnet('${r.id}')">✏️</button></td>
             </tr>`).join('')}</tbody>
           </table></div>
           ${realisees.length>6?`<p style="text-align:center;margin-top:.75rem;font-size:.8rem;color:var(--gris-texte)">${realisees.length-6} plongée${realisees.length-6>1?'s':''} de plus dans le PDF complet.</p>`:''}`
@@ -1475,6 +1474,7 @@ function renderAdmin(){return`<div style="padding-top:var(--nav)"><div class="ad
     <div class="admin-nav-item" data-view="plongees">🤿 Sorties</div>
     <div class="admin-nav-item" data-view="all-inscrits">📋 Inscriptions</div>
     <div class="admin-nav-item" data-view="adherents">👥 Adhérents</div>
+    <div class="admin-nav-item" data-view="materiel">🔧 Matériel</div>
     <div style="border-top:1px solid rgba(255,255,255,.1);margin-top:3rem;padding-top:1rem">
       <div class="admin-nav-item" id="admin-logout">🚪 Déconnexion</div>
     </div>
@@ -1496,6 +1496,7 @@ async function bindAdmin(){
       case 'plongees':     m.innerHTML=await renderAdminPlongees(); break;
       case 'all-inscrits': m.innerHTML=renderAllInscrits(); break;
       case 'adherents':    m.innerHTML=await renderAdherents(); bindAdherents(); break;
+      case 'materiel':     m.innerHTML=renderMateriel(); break;
     }
   }));
   document.getElementById('admin-logout')?.addEventListener('click',async()=>{AutoLogout.stop();await Auth.logout();await App.updateNav();App.go('accueil');});
@@ -1533,7 +1534,9 @@ async function renderDashboard(){
       <td><span class="badge ${countNovices(p.id)>=p.nb_places_novices?'badge-red':'badge-green'}">${countNovices(p.id)}/${p.nb_places_novices}</span></td>
       <td style="display:flex;gap:.35rem;flex-wrap:wrap">
         <button class="btn btn-ghost btn-sm" onclick="openModalInscrits(${p.id})">Inscrits</button>
-        <button class="btn btn-ghost btn-sm" onclick="openModalPlongee(${p.id})">Modifier</button>
+        ${p.statut==='realisee'
+          ?`<button class="btn btn-ghost btn-sm" onclick="openModalCloture(${p.id})">Re-clôturer</button>`
+          :`<button class="btn btn-ghost btn-sm" onclick="openModalPlongee(${p.id})">Modifier</button>`}
         <button class="btn btn-danger btn-sm" onclick="deletePlongee(${p.id})">✕</button>
       </td>
     </tr>`).join('')||'<tr><td colspan="6" class="text-muted" style="text-align:center;padding:1.5rem">Aucune sortie à venir</td></tr>'}</tbody></table>
@@ -1565,7 +1568,9 @@ async function renderAdminPlongees(){
       <td><span class="badge ${countNovices(p.id)>=p.nb_places_novices?'badge-red':'badge-green'}">${countNovices(p.id)}/${p.nb_places_novices}</span></td>
       <td style="display:flex;gap:.3rem;flex-wrap:wrap">
         <button class="btn btn-ghost btn-sm" onclick="openModalInscrits(${p.id})">Inscrits</button>
-        <button class="btn btn-ghost btn-sm" onclick="openModalPlongee(${p.id})">Modifier</button>
+        ${p.statut==='realisee'
+          ?`<button class="btn btn-ghost btn-sm" onclick="openModalCloture(${p.id})">Re-clôturer</button>`
+          :`<button class="btn btn-ghost btn-sm" onclick="openModalPlongee(${p.id})">Modifier</button>`}
         <button class="btn btn-danger btn-sm" onclick="deletePlongee(${p.id})">✕</button>
       </td>
     </tr>`).join('')}</tbody>
@@ -1851,22 +1856,24 @@ function renderAdherentsHtml(users, sess){
   return `
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;flex-wrap:wrap;gap:1rem">
     <h2 class="admin-page-title" style="margin:0">Adhérents</h2>
-    <button class="btn btn-primary" onclick="openModalNouvelAdherent()">+ Nouvel adhérent</button>
+    <div style="display:flex;gap:.5rem">
+      <button class="btn btn-ghost btn-sm" onclick="ouvrirImportCSV()">⬆ Import CSV</button>
+      <button class="btn btn-primary" onclick="openModalNouvelAdherent()">+ Nouvel adhérent</button>
+    </div>
   </div>
   <div class="table-wrap"><table>
     <thead><tr><th>Identifiant</th><th>Niveau</th><th>Rôle</th><th>Statut</th><th>Actions</th></tr></thead>
     <tbody>${users.map(u=>`<tr>
-      <td><strong>${esc(u.login)}</strong></td>
+      <td>${certExpirant(u) ? `<strong style="color:var(--rouge-alerte)">⚠️ ${esc(u.login)}</strong>` : `<strong>${esc(u.login)}</strong>`}
+          ${certExpirant(u) ? `<br><small style="color:var(--rouge-alerte)">Certificat expire le ${fmtDate(certExpireDate(u))}</small>` : ''}</td>
       <td><span class="badge badge-blue">${esc(u.niveau)}</span></td>
       <td>${u.role==='admin'?'<span class="badge badge-orange">Admin</span>':'<span class="badge" style="background:var(--gris-clair);color:var(--gris-texte)">Adhérent</span>'}</td>
       <td>${u.mustChange?'<span class="badge badge-red">⚠ Doit changer mdp</span>':'<span class="badge badge-green">Actif</span>'}</td>
       <td style="display:flex;gap:.35rem;flex-wrap:wrap">
         <button class="btn btn-ghost btn-sm" onclick="openHistoriqueAdherent('${u.id}')">📊 Carnet</button>
         ${u.id!=sess?.id?`
-          ${u.role==='admin'
-            ?`<button class="btn btn-ghost btn-sm" onclick="toggleAdmin('${u.id}',false)">Retirer admin</button>`
-            :`<button class="btn btn-ghost btn-sm" onclick="toggleAdmin('${u.id}',true)">Passer admin</button>`}
-          <button class="btn btn-ghost btn-sm" onclick="modifierNiveau('${u.id}','${u.niveau}')">Niveau</button>
+
+          <button class="btn btn-ghost btn-sm" onclick="ouvrirModifAdherent('${u.id}')">✏️ Modifier</button>
           <button class="btn btn-ghost btn-sm" onclick="resetPassword('${u.id}')">Reset mdp</button>
           <button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}')">✕</button>
         `:'<span style="font-size:.78rem;color:var(--gris-texte)">Compte courant</span>'}
@@ -1939,6 +1946,58 @@ async function toggleAdmin(id, makeAdmin){
   document.getElementById('admin-main').innerHTML = await renderAdherents();
 }
 
+async function ouvrirModifAdherent(id){
+  const users = await Users.all();
+  const u = users.find(x=>x.id==id); if(!u) return;
+
+  document.getElementById('modal-adherent-titre').textContent = 'Modifier l\'adhérent';
+  document.getElementById('modal-adherent-body').innerHTML = `
+    <div id="modif-alert"></div>
+    <div class="form-group"><label class="form-label">Identifiant (login)</label>
+      <input type="text" class="form-input" id="modif-login" value="${esc(u.login)}"></div>
+    <div class="form-group"><label class="form-label">Email</label>
+      <input type="email" class="form-input" id="modif-email" value="${esc(u.email||'')}"></div>
+    <div class="form-group"><label class="form-label">Niveau FFESSM</label>
+      <select class="form-select" id="modif-niveau">
+        ${['Baptême','N1','N2','N3','N4/GP','MF1','MF2'].map(n=>`<option value="${n}"${n===u.niveau?' selected':''}>${n}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Rôle</label>
+      <select class="form-select" id="modif-role">
+        <option value="adherent"${u.role==='adherent'?' selected':''}>Adhérent</option>
+        <option value="admin"${u.role==='admin'?' selected':''}>Administrateur</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">📋 Date du certificat médical</label>
+      <input type="date" class="form-input" id="modif-cert" value="${u.cert_medical_date||''}">
+      <small class="text-muted" style="display:block;margin-top:.3rem">Validité 1 an. Alerte automatique 2 semaines avant expiration.</small>
+    </div>
+    <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:.5rem">
+      <button class="btn btn-ghost" onclick="closeModal('modal-adherent')">Annuler</button>
+      <button class="btn btn-primary" onclick="sauvegarderModifAdherent('${id}')">Enregistrer</button>
+    </div>`;
+  openModal('modal-adherent');
+}
+
+async function sauvegarderModifAdherent(id){
+  const login = document.getElementById('modif-login').value.trim();
+  const email = document.getElementById('modif-email').value.trim();
+  const niveau = document.getElementById('modif-niveau').value;
+  const role = document.getElementById('modif-role').value;
+  const cert = document.getElementById('modif-cert').value;
+  const al = document.getElementById('modif-alert');
+  if(!login){al.innerHTML=`<div class="alert alert-error">✗ L'identifiant est requis.</div>`;return;}
+  try {
+    await sb().from('profiles').update({login, email, niveau, role, cert_medical_date: cert||null}).eq('id', id);
+    closeModal('modal-adherent');
+    document.getElementById('admin-main').innerHTML = await renderAdherents();
+    showToast('✅ Adhérent mis à jour.');
+  } catch(e){
+    al.innerHTML=`<div class="alert alert-error">✗ Erreur : ${e.message}</div>`;
+  }
+}
+
 async function modifierNiveau(id, niveauActuel){
   const niveaux = ['Baptême','N1','N2','N3','N4/GP','MF1','MF2'];
   const idx = niveaux.indexOf(niveauActuel);
@@ -1957,6 +2016,25 @@ async function modifierNiveau(id, niveauActuel){
       <button class="btn btn-primary" onclick="saveNiveau('${id}')">Enregistrer</button>
     </div>`;
   openModal('modal-adherent');
+}
+
+// Helpers certificat médical
+function certExpireDate(u){
+  if(!u.cert_medical_date) return null;
+  const d = new Date(u.cert_medical_date);
+  d.setFullYear(d.getFullYear()+1);
+  return d.toISOString().split('T')[0];
+}
+function certExpirant(u){
+  const exp = certExpireDate(u);
+  if(!exp) return false;
+  const diff = (new Date(exp) - new Date()) / (1000*60*60*24);
+  return diff <= 14;
+}
+function certExpire(u){
+  const exp = certExpireDate(u);
+  if(!exp) return false;
+  return new Date(exp) < new Date();
 }
 
 async function saveNiveau(id){
@@ -2255,6 +2333,9 @@ async function exportCarnetPDF(userId){
           ${r.type==='fosse'?'Fosse':r.type==='voyage'?'Voyage':'Mer / Bassin'}
         </span>
       </td>
+      <td style="text-align:center">${r.profondeur?r.profondeur+'m':'—'}</td>
+      <td style="text-align:center">${r.duree?r.duree+'min':'—'}</td>
+      <td style="font-size:7.5pt;color:#666">${r.observations||'—'}</td>
     </tr>`).join('');
 
   const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
@@ -2296,7 +2377,7 @@ async function exportCarnetPDF(userId){
     <div class="stat"><div class="stat-num">${nbVoyage}</div><div class="stat-label">Voyages</div></div>
   </div>
   ${realisees.length?`<table>
-    <thead><tr><th>#</th><th>Date</th><th>Sortie</th><th>Lieu</th><th style="text-align:center">Type</th></tr></thead>
+    <thead><tr><th>#</th><th>Date</th><th>Sortie</th><th>Lieu</th><th style="text-align:center">Type</th><th>Prof.</th><th>Durée</th><th>Observations</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>`:'<p style="text-align:center;color:#999;margin:2rem">Aucune plongée enregistrée.</p>'}
   <div class="footer">Document généré par le site du Loubine Club · loubineclub@gmail.com · 07 83 99 76 14</div>
@@ -2380,6 +2461,163 @@ const AutoLogout = {
     showToast('⏱ Déconnexion automatique après 30 min d\'inactivité.', 'info');
   }
 };
+
+
+// ── IMPORT CSV ADHÉRENTS ─────────────────────────────────────────
+function ouvrirImportCSV(){
+  document.getElementById('modal-adherent-titre').textContent = 'Import CSV adhérents';
+  document.getElementById('modal-adherent-body').innerHTML = `
+    <div id="csv-alert"></div>
+    <p style="font-size:.85rem;color:var(--gris-texte);margin-bottom:1rem">
+      Importez plusieurs adhérents d'un coup. Le fichier CSV doit avoir les colonnes :<br>
+      <code style="background:var(--blanc-casse);padding:.2rem .5rem;border-radius:4px">login,email,niveau,role</code><br><br>
+      Les adhérents déjà existants (même email) seront <strong>ignorés</strong>.<br>
+      Mot de passe provisoire : <strong>Loubine1</strong>
+    </p>
+    <div style="border:2px dashed var(--gris-clair);border-radius:var(--rs);padding:1.5rem;text-align:center;margin-bottom:1rem;cursor:pointer" onclick="document.getElementById('csv-file').click()">
+      <div style="font-size:2rem;margin-bottom:.5rem">📄</div>
+      <div style="font-weight:600;margin-bottom:.25rem">Cliquer pour sélectionner un fichier CSV</div>
+      <div style="font-size:.78rem;color:var(--gris-texte)">ou glisser-déposer ici</div>
+      <input type="file" id="csv-file" accept=".csv" style="display:none" onchange="previewCSV(this)">
+    </div>
+    <div id="csv-preview" style="display:none">
+      <div class="form-section-title">Aperçu</div>
+      <div id="csv-preview-content" style="max-height:200px;overflow-y:auto;font-size:.82rem"></div>
+      <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1rem">
+        <button class="btn btn-ghost" onclick="closeModal('modal-adherent')">Annuler</button>
+        <button class="btn btn-primary" id="csv-import-btn" onclick="lancerImportCSV()">Importer</button>
+      </div>
+    </div>`;
+  openModal('modal-adherent');
+}
+
+let csvData = [];
+
+function previewCSV(input){
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const text = e.target.result;
+    const lines = text.split('\n').filter(l=>l.trim());
+    csvData = [];
+    const headers = lines[0].toLowerCase().split(',').map(h=>h.trim().replace(/"/g,''));
+    const iLogin  = headers.indexOf('login');
+    const iEmail  = headers.indexOf('email');
+    const iNiveau = headers.indexOf('niveau');
+    const iRole   = headers.indexOf('role');
+    if(iLogin<0||iEmail<0){
+      document.getElementById('csv-alert').innerHTML=`<div class="alert alert-error">✗ Colonnes "login" et "email" obligatoires.</div>`;
+      return;
+    }
+    for(let i=1;i<lines.length;i++){
+      const cols = lines[i].split(',').map(c=>c.trim().replace(/"/g,''));
+      if(!cols[iEmail]) continue;
+      csvData.push({
+        login:  cols[iLogin]  || cols[iEmail].split('@')[0],
+        email:  cols[iEmail],
+        niveau: iNiveau>=0 ? (cols[iNiveau]||'N1') : 'N1',
+        role:   iRole>=0   ? (cols[iRole]  ||'adherent') : 'adherent'
+      });
+    }
+    const preview = document.getElementById('csv-preview');
+    const content = document.getElementById('csv-preview-content');
+    content.innerHTML = `<table style="width:100%;border-collapse:collapse">`+
+      `<thead><tr style="background:var(--blanc-casse)">${['Login','Email','Niveau','Rôle'].map(h=>`<th style="padding:.4rem .6rem;text-align:left;font-size:.72rem;color:var(--gris-texte);text-transform:uppercase">${h}</th>`).join('')}</tr></thead>`+
+      `<tbody>${csvData.map(r=>`<tr style="border-bottom:1px solid var(--gris-clair)">${[r.login,r.email,r.niveau,r.role].map(v=>`<td style="padding:.4rem .6rem">${esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+    content.innerHTML += `<p style="margin-top:.5rem;font-size:.78rem;color:var(--gris-texte)">${csvData.length} adhérent(s) à importer</p>`;
+    preview.style.display='block';
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+async function lancerImportCSV(){
+  const btn = document.getElementById('csv-import-btn');
+  const al  = document.getElementById('csv-alert');
+  btn.disabled=true;
+  btn.innerHTML='<span class="spinner"></span> Import en cours…';
+  let ok=0, skip=0, errors=0;
+  for(const row of csvData){
+    try {
+      const result = await Users.create(row.login, row.email, 'Loubine1', row.niveau, row.role);
+      if(result?.ok) ok++;
+      else skip++; // email déjà existant
+    } catch(e){ errors++; }
+  }
+  btn.disabled=false;
+  btn.innerHTML='Importer';
+  al.innerHTML=`<div class="alert alert-success">✅ Import terminé : <strong>${ok}</strong> créé(s), <strong>${skip}</strong> ignoré(s) (déjà existants)${errors?`, <strong>${errors}</strong> erreur(s)`:''}.</div>`;
+  // Rafraîchir la liste
+  setTimeout(async()=>{
+    closeModal('modal-adherent');
+    document.getElementById('admin-main').innerHTML = await renderAdherents();
+  }, 2500);
+}
+
+
+function renderMateriel(){
+  return `
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;flex-wrap:wrap;gap:1rem">
+    <h2 class="admin-page-title" style="margin:0">Suivi Matériel</h2>
+    <button class="btn btn-primary" onclick="alert('Fonctionnalité en cours de développement — V2')">+ Ajouter du matériel</button>
+  </div>
+  <div style="background:var(--blanc);border-radius:var(--r);padding:3rem;text-align:center;box-shadow:var(--sh-sm)">
+    <div style="font-size:3rem;margin-bottom:1rem">🔧</div>
+    <h3 style="font-family:var(--font-d);font-size:1.4rem;font-weight:700;text-transform:uppercase;margin-bottom:.75rem">Module Matériel</h3>
+    <p style="color:var(--gris-texte);max-width:400px;margin:0 auto 1.5rem;line-height:1.7">
+      Ce module permettra de gérer le matériel du club : inventaire, état, dates de révision et alertes de maintenance.
+    </p>
+    <p style="font-size:.82rem;color:var(--gris-texte)">Sera développé lors de la prochaine mise à jour.</p>
+  </div>`;
+}
+
+
+// ── MODIFIER UNE ENTRÉE CARNET ────────────────────────────────────
+function ouvrirModifCarnet(rid){
+  const r = DB_R.find(x=>x.id==rid||x.id==parseInt(rid)); if(!r) return;
+  document.getElementById('modal-adherent-titre').textContent = 'Modifier la plongée';
+  document.getElementById('modal-adherent-body').innerHTML = `
+    <div id="mc-alert"></div>
+    <p style="font-size:.85rem;color:var(--gris-texte);margin-bottom:1.2rem">
+      <strong>${esc(r.titre)}</strong> · ${fmtDate(r.date)}
+    </p>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Profondeur max (m)</label>
+        <input type="number" class="form-input" id="mc-prof" value="${r.profondeur||''}" min="0" max="70" placeholder="ex: 28"></div>
+      <div class="form-group"><label class="form-label">Durée (minutes)</label>
+        <input type="number" class="form-input" id="mc-duree" value="${r.duree||''}" min="0" max="300" placeholder="ex: 45"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Observations <small style="color:var(--gris-texte)">(100 caractères max)</small></label>
+      <textarea class="form-textarea" id="mc-obs" maxlength="100" rows="2" placeholder="Visibilité, faune observée…">${esc(r.observations||'')}</textarea>
+      <small id="mc-count" style="color:var(--gris-texte);font-size:.75rem">${(r.observations||'').length}/100</small>
+    </div>
+    <div style="display:flex;gap:.75rem;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal('modal-adherent')">Annuler</button>
+      <button class="btn btn-primary" onclick="sauvegarderCarnet('${rid}')">Enregistrer</button>
+    </div>`;
+  document.getElementById('mc-obs')?.addEventListener('input', function(){
+    document.getElementById('mc-count').textContent = this.value.length+'/100';
+  });
+  openModal('modal-adherent');
+}
+
+async function sauvegarderCarnet(rid){
+  const profondeur = parseInt(document.getElementById('mc-prof').value)||null;
+  const duree      = parseInt(document.getElementById('mc-duree').value)||null;
+  const observations = document.getElementById('mc-obs').value.trim().slice(0,100);
+  const al = document.getElementById('mc-alert');
+  try {
+    const { error } = await sb().from('realisees').update({profondeur,duree,observations}).eq('id',rid);
+    if(error) throw error;
+    // Mettre à jour le cache local
+    const idx = DB_R.findIndex(x=>x.id==rid||x.id==parseInt(rid));
+    if(idx>=0) DB_R[idx]={...DB_R[idx],profondeur,duree,observations};
+    closeModal('modal-adherent');
+    App.go('profil');
+    showToast('✅ Plongée mise à jour !');
+  } catch(e){
+    al.innerHTML=`<div class="alert alert-error">✗ Erreur : ${e.message}</div>`;
+  }
+}
 
 // -- TOAST -------------------------------------------------------
 function showToast(msg, type='success'){
