@@ -1854,16 +1854,21 @@ async function renderAdherents(){
 function renderAdherentsHtml(users, sess){
   if(!sess) sess = Session._cache;
   return `
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;flex-wrap:wrap;gap:1rem">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:1rem">
     <h2 class="admin-page-title" style="margin:0">Adhérents</h2>
-    <div style="display:flex;gap:.5rem">
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
       <button class="btn btn-ghost btn-sm" onclick="ouvrirImportCSV()">⬆ Import CSV</button>
       <button class="btn btn-primary" onclick="openModalNouvelAdherent()">+ Nouvel adhérent</button>
     </div>
   </div>
+  <div style="margin-bottom:1.25rem">
+    <input type="text" id="adh-search" class="form-input" placeholder="🔍 Rechercher par identifiant ou email…"
+      oninput="filtrerAdherents(this.value)"
+      style="max-width:380px">
+  </div>
   <div class="table-wrap"><table>
     <thead><tr><th>Identifiant</th><th>Niveau</th><th>Rôle</th><th>Statut</th><th>Actions</th></tr></thead>
-    <tbody>${users.map(u=>`<tr>
+    <tbody id="adh-tbody">${users.map(u=>`<tr>
       <td>${certExpirant(u) ? `<strong style="color:var(--rouge-alerte)">⚠️ ${esc(u.login)}</strong>` : `<strong>${esc(u.login)}</strong>`}
           ${certExpirant(u) ? `<br><small style="color:var(--rouge-alerte)">Certificat expire le ${fmtDate(certExpireDate(u))}</small>` : ''}</td>
       <td><span class="badge badge-blue">${esc(u.niveau)}</span></td>
@@ -2617,6 +2622,29 @@ async function sauvegarderCarnet(rid){
   } catch(e){
     al.innerHTML=`<div class="alert alert-error">✗ Erreur : ${e.message}</div>`;
   }
+}
+
+
+// ── FILTRER ADHÉRENTS ────────────────────────────────────────────
+function filtrerAdherents(query){
+  const q = query.toLowerCase().trim();
+  const rows = document.querySelectorAll('#adh-tbody tr');
+  let visible = 0;
+  rows.forEach(row => {
+    const text = row.textContent.toLowerCase();
+    const show = !q || text.includes(q);
+    row.style.display = show ? '' : 'none';
+    if(show) visible++;
+  });
+  // Afficher un message si aucun résultat
+  let noResult = document.getElementById('adh-no-result');
+  if(!noResult){
+    noResult = document.createElement('tr');
+    noResult.id = 'adh-no-result';
+    noResult.innerHTML = '<td colspan="6" style="text-align:center;color:var(--gris-texte);padding:1.5rem">Aucun adhérent trouvé.</td>';
+    document.getElementById('adh-tbody')?.appendChild(noResult);
+  }
+  noResult.style.display = visible === 0 ? '' : 'none';
 }
 
 // -- TOAST -------------------------------------------------------
