@@ -324,6 +324,7 @@ tbody tr:hover td{background:var(--blanc-casse)}
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 .toast.success{border-left:4px solid var(--vert-ok)}
 .toast.error{border-left:4px solid var(--rouge-alerte)}
+.toast.info{border-left:4px solid var(--bleu-lagon)}
 
 /* SPINNER */
 .spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:var(--blanc);border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
@@ -591,7 +592,12 @@ const Users = {
     const { data } = await sb().from('profiles').select('*').eq('id', id).single();
     return data;
   },
-  async create(login, email, password, niveau, role='adherent') {
+  async create(login, email, password, niveau, role='adherent', cert=null) {
+    // Sauvegarder la session admin courante
+    const { data: currentSession } = await sb().auth.getSession();
+    const adminEmail    = currentSession?.session?.user?.email;
+    const adminPassword = null; // on ne peut pas récupérer le mdp → on utilise refreshSession
+
     const { data, error } = await sb().auth.signUp({
       email: email.trim(),
       password,
@@ -599,6 +605,23 @@ const Users = {
     });
     if(error) { console.error(error); return { ok: false, message: error.message }; }
     if(!data?.user) return { ok: false, message: 'Cet email existe déjà.' };
+
+    // Restaurer la session admin immédiatement via refreshSession
+    try {
+      if(currentSession?.session?.refresh_token) {
+        await sb().auth.setSession({
+          access_token:  currentSession.session.access_token,
+          refresh_token: currentSession.session.refresh_token
+        });
+      }
+    } catch(e) { console.warn('session restore:', e.message); }
+
+    // Mettre à jour le certificat si fourni
+    if(cert && data?.user?.id) {
+      try {
+        await sb().from('profiles').update({cert_medical_date: cert}).eq('id', data.user.id);
+      } catch(e) { console.warn('cert update:', e.message); }
+    }
     return { ok: true };
   },
   async update(id, changes) {
@@ -796,7 +819,7 @@ function renderAccueil(){
     <div class="hero-stats">
       <div class="stat-item"><span class="stat-num">1994</span><span class="stat-label">Fondé en</span></div>
       <div class="stat-item"><span class="stat-num">50+</span><span class="stat-label">Adhérents</span></div>
-      <div class="stat-item"><span class="stat-num">Baptême→N2</span><span class="stat-label">Formations</span></div>
+      <div class="stat-item"><span class="stat-num">N1→N2</span><span class="stat-label">Formations</span></div>
       <div class="stat-item"><span class="stat-num">2×/an</span><span class="stat-label">Voyages</span></div>
     </div>
   </div></div>
@@ -1473,8 +1496,12 @@ function renderAdmin(){return`<div style="padding-top:var(--nav)"><div class="ad
     <div class="admin-nav-item active" data-view="dashboard">📊 Tableau de bord</div>
     <div class="admin-nav-item" data-view="plongees">🤿 Sorties</div>
     <div class="admin-nav-item" data-view="all-inscrits">📋 Inscriptions</div>
-    <div class="admin-nav-item" data-view="adherents">👥 Adhérents</div>
-    <div class="admin-nav-item" data-view="materiel">🔧 Matériel</div>
+    <div style="border-top:1px solid rgba(255,255,255,.1);margin-top:.5rem;padding-top:.5rem">
+      <div class="admin-nav-item" data-view="adherents">👥 Adhérents</div>
+    </div>
+    <div style="border-top:1px solid rgba(255,255,255,.1);margin-top:.5rem;padding-top:.5rem">
+      <div class="admin-nav-item" data-view="materiel">🔧 Matériel</div>
+    </div>
     <div style="border-top:1px solid rgba(255,255,255,.1);margin-top:3rem;padding-top:1rem">
       <div class="admin-nav-item" id="admin-logout">🚪 Déconnexion</div>
     </div>
@@ -1832,13 +1859,16 @@ async function openHistoriqueAdherent(userId){
       </div>
     </div>
     ${realisees.length?`<div style="overflow-x:auto"><table>
-      <thead><tr><th>#</th><th>Date</th><th>Sortie</th><th>Lieu</th><th>Type</th></tr></thead>
+      <thead><tr><th>#</th><th>Date</th><th>Sortie</th><th>Lieu</th><th>Type</th><th>Prof.</th><th>Durée</th><th>Observations</th></tr></thead>
       <tbody>${realisees.map((r,idx)=>`<tr>
         <td style="font-size:.8rem;color:var(--gris-texte);text-align:center"><strong>${realisees.length-idx}</strong></td>
         <td style="font-size:.82rem;white-space:nowrap">${fmtDate(r.date)}</td>
         <td style="font-size:.82rem"><strong>${esc(r.titre)}</strong></td>
         <td style="font-size:.78rem;color:var(--gris-texte)">${esc(r.lieu||'')}</td>
         <td><span class="badge ${typeBadge(r.type)}">${typeLabel(r.type)}</span></td>
+        <td style="font-size:.82rem;text-align:center">${r.profondeur?r.profondeur+'m':'—'}</td>
+        <td style="font-size:.82rem;text-align:center">${r.duree?r.duree+'min':'—'}</td>
+        <td style="font-size:.78rem;color:var(--gris-texte);max-width:150px">${esc(r.observations||'—')}</td>
       </tr>`).join('')}</tbody>
     </table></div>`:'<p class="text-muted text-center">Aucune plongée enregistrée.</p>'}`;
   openModal('modal-inscrits');
@@ -1867,13 +1897,19 @@ function renderAdherentsHtml(users, sess){
       style="max-width:380px">
   </div>
   <div class="table-wrap"><table>
-    <thead><tr><th>Identifiant</th><th>Niveau</th><th>Rôle</th><th>Statut</th><th>Actions</th></tr></thead>
+    <thead><tr><th>Identifiant</th><th>Niveau</th><th>Rôle</th><th>Statut</th><th>Certificat médical</th><th>Actions</th></tr></thead>
     <tbody id="adh-tbody">${users.map(u=>`<tr>
       <td>${certExpirant(u) ? `<strong style="color:var(--rouge-alerte)">⚠️ ${esc(u.login)}</strong>` : `<strong>${esc(u.login)}</strong>`}
           ${certExpirant(u) ? `<br><small style="color:var(--rouge-alerte)">Certificat expire le ${fmtDate(certExpireDate(u))}</small>` : ''}</td>
       <td><span class="badge badge-blue">${esc(u.niveau)}</span></td>
       <td>${u.role==='admin'?'<span class="badge badge-orange">Admin</span>':'<span class="badge" style="background:var(--gris-clair);color:var(--gris-texte)">Adhérent</span>'}</td>
       <td>${u.mustChange?'<span class="badge badge-red">⚠ Doit changer mdp</span>':'<span class="badge badge-green">Actif</span>'}</td>
+      <td style="font-size:.82rem">${u.cert_medical_date
+        ? certExpirant(u)
+          ? `<span style="color:var(--rouge-alerte);font-weight:700">⚠️ ${fmtDate(certExpireDate(u))}</span>`
+          : fmtDate(u.cert_medical_date)
+        : '<span style="color:var(--gris-texte)">—</span>'
+      }</td>
       <td style="display:flex;gap:.35rem;flex-wrap:wrap">
         <button class="btn btn-ghost btn-sm" onclick="openHistoriqueAdherent('${u.id}')">📊 Carnet</button>
         ${u.id!=sess?.id?`
@@ -1913,6 +1949,10 @@ function openModalNouvelAdherent(){
       <input type="text" class="form-input" id="adh-pwd" placeholder="À communiquer à l'adhérent">
       <small class="text-muted" style="display:block;margin-top:.3rem">Minimum 6 caractères. L'adhérent pourra le changer depuis son profil.</small>
     </div>
+    <div class="form-group"><label class="form-label">📋 Date du certificat médical</label>
+      <input type="date" class="form-input" id="adh-cert">
+      <small class="text-muted" style="display:block;margin-top:.3rem">Optionnel. Validité 1 an, alerte 2 semaines avant expiration.</small>
+    </div>
     <div style="display:flex;gap:.75rem;justify-content:flex-end">
       <button class="btn btn-ghost" onclick="closeModal('modal-adherent')">Annuler</button>
       <button class="btn btn-primary" onclick="saveNouvelAdherent()">Créer l'adhérent</button>
@@ -1932,7 +1972,8 @@ async function saveNouvelAdherent(){
   if(!email.includes('@')){al.innerHTML=`<div class="alert alert-error">✗ Email invalide.</div>`;return;}
   if(pwd.length<6){al.innerHTML=`<div class="alert alert-error">✗ Le mot de passe doit faire au moins 6 caractères.</div>`;return;}
   if(btn){btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Création…';}
-  const result = await Users.create(login, email, pwd, niveau, role);
+  const cert = document.getElementById('adh-cert')?.value || null;
+  const result = await Users.create(login, email, pwd, niveau, role, cert);
   if(!result?.ok){
     const msg = result?.message || 'Erreur serveur.';
     al.innerHTML=`<div class="alert alert-error">✗ ${msg}</div>`;
@@ -1994,7 +2035,9 @@ async function sauvegarderModifAdherent(id){
   const al = document.getElementById('modif-alert');
   if(!login){al.innerHTML=`<div class="alert alert-error">✗ L'identifiant est requis.</div>`;return;}
   try {
-    await sb().from('profiles').update({login, email, niveau, role, cert_medical_date: cert||null}).eq('id', id);
+    const updateData = {login, niveau, role, cert_medical_date: cert||null};
+    if(email) updateData.email = email;
+    await sb().from('profiles').update(updateData).eq('id', id);
     closeModal('modal-adherent');
     document.getElementById('admin-main').innerHTML = await renderAdherents();
     showToast('✅ Adhérent mis à jour.');
@@ -2315,10 +2358,15 @@ async function saveModifInscription(inscriptionId){
 
 // -- PDF CARNET DE PLONGÉE ----------------------------------------
 async function exportCarnetPDF(userId){
-  const u = await Users.findById(userId);
-  if(!u) return;
-  const allR = await DB.getRealisees(userId);
-  const realisees = allR.sort((a,b)=>a.date.localeCompare(b.date));
+  // Afficher spinner pendant le chargement
+  showToast('⏳ Génération du PDF en cours…', 'info');
+  let u, realisees;
+  try {
+    u = await Users.findById(userId);
+    if(!u){ showToast('✗ Utilisateur introuvable.', 'error'); return; }
+    const allR = await DB.getRealisees(userId);
+    realisees = allR.sort((a,b)=>a.date.localeCompare(b.date));
+  } catch(e){ showToast('✗ Erreur chargement : '+e.message, 'error'); return; }
   const nbMer = countPlongeesMer(userId);
   const nbFosse = countPlongeesFosse(userId);
   const nbVoyage = countProngeesVoyage(userId);
@@ -2479,24 +2527,100 @@ function ouvrirImportCSV(){
       Les adhérents déjà existants (même email) seront <strong>ignorés</strong>.<br>
       Mot de passe provisoire : <strong>Loubine1</strong>
     </p>
-    <div style="border:2px dashed var(--gris-clair);border-radius:var(--rs);padding:1.5rem;text-align:center;margin-bottom:1rem;cursor:pointer" onclick="document.getElementById('csv-file').click()">
-      <div style="font-size:2rem;margin-bottom:.5rem">📄</div>
-      <div style="font-weight:600;margin-bottom:.25rem">Cliquer pour sélectionner un fichier CSV</div>
-      <div style="font-size:.78rem;color:var(--gris-texte)">ou glisser-déposer ici</div>
-      <input type="file" id="csv-file" accept=".csv" style="display:none" onchange="previewCSV(this)">
+    <div class="form-section-title">Saisie des adhérents</div>
+    <p style="font-size:.82rem;color:var(--gris-texte);margin-bottom:.75rem">
+      Remplissez un adhérent par ligne. Mot de passe provisoire : <strong>Loubine1</strong><br>
+      Les adhérents déjà existants (même email) sont ignorés.
+    </p>
+    <div style="overflow-x:auto;margin-bottom:1rem">
+      <table style="width:100%;border-collapse:collapse;font-size:.85rem" id="csv-table">
+        <thead><tr>
+          <th style="background:var(--bleu-fond);color:#fff;padding:.5rem .75rem;text-align:left;font-size:.75rem">Identifiant *</th>
+          <th style="background:var(--bleu-fond);color:#fff;padding:.5rem .75rem;text-align:left;font-size:.75rem">Email *</th>
+          <th style="background:var(--bleu-fond);color:#fff;padding:.5rem .75rem;text-align:left;font-size:.75rem">Niveau</th>
+          <th style="background:var(--bleu-fond);color:#fff;padding:.5rem .75rem;text-align:left;font-size:.75rem">Rôle</th>
+          <th style="background:var(--bleu-fond);color:#fff;padding:.5rem .75rem;text-align:center;font-size:.75rem">+/-</th>
+        </tr></thead>
+        <tbody id="csv-rows">
+          ${[0,1,2].map(i=>`<tr id="csv-row-${i}">
+            <td style="padding:.3rem"><input type="text" class="form-input csv-login" style="min-width:110px" placeholder="Dupont"></td>
+            <td style="padding:.3rem"><input type="email" class="form-input csv-email" style="min-width:160px" placeholder="dupont@mail.fr"></td>
+            <td style="padding:.3rem"><select class="form-select csv-niveau">
+              ${['N1','N2','N3','N4/GP','MF1','MF2','Baptême'].map(n=>`<option>${n}</option>`).join('')}
+            </select></td>
+            <td style="padding:.3rem"><select class="form-select csv-role">
+              <option value="adherent">Adhérent</option>
+              <option value="admin">Admin</option>
+            </select></td>
+            <td style="padding:.3rem;text-align:center">
+              <button class="btn btn-danger btn-sm" onclick="supprimerLigneCSV(${i})" title="Supprimer">✕</button>
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
     </div>
-    <div id="csv-preview" style="display:none">
-      <div class="form-section-title">Aperçu</div>
-      <div id="csv-preview-content" style="max-height:200px;overflow-y:auto;font-size:.82rem"></div>
-      <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1rem">
-        <button class="btn btn-ghost" onclick="closeModal('modal-adherent')">Annuler</button>
-        <button class="btn btn-primary" id="csv-import-btn" onclick="lancerImportCSV()">Importer</button>
-      </div>
+    <div style="display:flex;gap:.5rem;margin-bottom:1rem">
+      <button class="btn btn-ghost btn-sm" onclick="ajouterLigneCSV()">+ Ajouter une ligne</button>
+    </div>
+    <div id="csv-alert2"></div>
+    <div style="display:flex;gap:.75rem;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal('modal-adherent')">Annuler</button>
+      <button class="btn btn-primary" id="csv-import-btn" onclick="lancerImportTable()">Importer</button>
     </div>`;
   openModal('modal-adherent');
 }
 
 let csvData = [];
+let csvRowCount = 3;
+
+function ajouterLigneCSV(){
+  const tbody = document.getElementById('csv-rows'); if(!tbody) return;
+  const i = csvRowCount++;
+  const tr = document.createElement('tr');
+  tr.id = `csv-row-${i}`;
+  tr.innerHTML = `
+    <td style="padding:.3rem"><input type="text" class="form-input csv-login" style="min-width:110px" placeholder="Dupont"></td>
+    <td style="padding:.3rem"><input type="email" class="form-input csv-email" style="min-width:160px" placeholder="dupont@mail.fr"></td>
+    <td style="padding:.3rem"><select class="form-select csv-niveau">
+      ${['N1','N2','N3','N4/GP','MF1','MF2','Baptême'].map(n=>`<option>${n}</option>`).join('')}
+    </select></td>
+    <td style="padding:.3rem"><select class="form-select csv-role">
+      <option value="adherent">Adhérent</option>
+      <option value="admin">Admin</option>
+    </select></td>
+    <td style="padding:.3rem;text-align:center"><button class="btn btn-danger btn-sm" onclick="supprimerLigneCSV(${i})">✕</button></td>`;
+  tbody.appendChild(tr);
+}
+
+function supprimerLigneCSV(i){
+  document.getElementById(`csv-row-${i}`)?.remove();
+}
+
+async function lancerImportTable(){
+  const btn = document.getElementById('csv-import-btn');
+  const al  = document.getElementById('csv-alert2');
+  // Récupérer toutes les lignes
+  const rows = [];
+  document.querySelectorAll('#csv-rows tr').forEach(tr=>{
+    const login  = tr.querySelector('.csv-login')?.value.trim();
+    const email  = tr.querySelector('.csv-email')?.value.trim();
+    const niveau = tr.querySelector('.csv-niveau')?.value || 'N1';
+    const role   = tr.querySelector('.csv-role')?.value || 'adherent';
+    if(login && email && email.includes('@')) rows.push({login,email,niveau,role});
+  });
+  if(!rows.length){al.innerHTML=`<div class="alert alert-error">✗ Aucune ligne valide (identifiant + email requis).</div>`;return;}
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Import…';
+  let ok=0, skip=0, errors=0;
+  for(const row of rows){
+    try {
+      const result = await Users.create(row.login, row.email, 'Loubine1', row.niveau, row.role);
+      if(result?.ok) ok++; else skip++;
+    } catch(e){ errors++; }
+  }
+  btn.disabled=false; btn.innerHTML='Importer';
+  al.innerHTML=`<div class="alert alert-success">✅ ${ok} créé(s), ${skip} ignoré(s) (déjà existants)${errors?`, ${errors} erreur(s)`:''}.</div>`;
+  setTimeout(async()=>{ closeModal('modal-adherent'); document.getElementById('admin-main').innerHTML=await renderAdherents(); },2500);
+}
 
 function previewCSV(input){
   const file = input.files[0]; if(!file) return;
@@ -2655,7 +2779,8 @@ function showToast(msg, type='success'){
   t.textContent=msg;
   document.body.appendChild(t);
   requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ t.classList.add('show'); }); });
-  setTimeout(()=>{ t.classList.remove('show'); setTimeout(()=>t.remove(),400); },3500);
+  const delay = type==='info' ? 2000 : 3500;
+  setTimeout(()=>{ t.classList.remove('show'); setTimeout(()=>t.remove(),400); },delay);
 }
 
 // -- DÉMARRAGE -----------------------------------------------------
