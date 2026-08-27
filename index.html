@@ -2275,10 +2275,11 @@ function exportPDF(pid){
   </div>
   </body></html>`;
 
-  const w=window.open('','_blank','width=1100,height=750');
-  w.document.write(html);
-  w.document.close();
-  w.onload=()=>{ w.focus(); w.print(); };
+  const blob2 = new Blob([html], {type:'text/html;charset=utf-8'});
+  const url2  = URL.createObjectURL(blob2);
+  const w     = window.open(url2, '_blank');
+  if(!w){ showToast('✗ Popup bloquée.', 'error'); return; }
+  w.onload = ()=>{ setTimeout(()=>{ w.focus(); w.print(); URL.revokeObjectURL(url2); }, 500); };
 }
 
 // -- MODALS -------------------------------------------------------
@@ -2436,10 +2437,12 @@ async function exportCarnetPDF(userId){
   <div class="footer">Document généré par le site du Loubine Club · loubineclub@gmail.com · 07 83 99 76 14</div>
   </body></html>`;
 
-  const w = window.open('','_blank','width=900,height=700');
-  w.document.write(html);
-  w.document.close();
-  w.onload = ()=>{ w.focus(); w.print(); };
+  // Utiliser un Blob URL pour éviter les problèmes de caractères spéciaux
+  const blob = new Blob([html], {type: 'text/html;charset=utf-8'});
+  const url  = URL.createObjectURL(blob);
+  const w    = window.open(url, '_blank');
+  if(!w) { showToast('✗ Popup bloquée — autorisez les popups pour ce site.', 'error'); return; }
+  w.onload = ()=>{ setTimeout(()=>{ w.focus(); w.print(); URL.revokeObjectURL(url); }, 500); };
 }
 
 
