@@ -1906,10 +1906,11 @@ function renderAdherentsHtml(users, sess){
       style="max-width:380px">
   </div>
   <div class="table-wrap"><table>
-    <thead><tr><th>Identifiant</th><th>Niveau</th><th>Rôle</th><th>Statut</th><th>Certificat médical</th><th>Actions</th></tr></thead>
+    <thead><tr><th>Identifiant</th><th>Email</th><th>Niveau</th><th>Rôle</th><th>Statut</th><th>Certificat médical</th><th>Actions</th></tr></thead>
     <tbody id="adh-tbody">${users.map(u=>`<tr>
       <td>${certExpirant(u) ? `<strong style="color:var(--rouge-alerte)">⚠️ ${esc(u.login)}</strong>` : `<strong>${esc(u.login)}</strong>`}
           ${certExpirant(u) ? `<br><small style="color:var(--rouge-alerte)">Certificat expire le ${fmtDate(certExpireDate(u))}</small>` : ''}</td>
+      <td style="font-size:.82rem;color:var(--gris-texte)">${esc(u.email||'—')}</td>
       <td><span class="badge badge-blue">${esc(u.niveau)}</span></td>
       <td>${u.role==='admin'?'<span class="badge badge-orange">Admin</span>':'<span class="badge" style="background:var(--gris-clair);color:var(--gris-texte)">Adhérent</span>'}</td>
       <td>${u.mustChange?'<span class="badge badge-red">⚠ Doit changer mdp</span>':'<span class="badge badge-green">Actif</span>'}</td>
