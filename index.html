@@ -1503,8 +1503,7 @@ function renderLogin(){ App.go('login'); }
 function renderAdmin(){return`<div style="padding-top:var(--nav)"><div class="admin-layout">
   <aside class="admin-sidebar">
     <div class="admin-nav-item active" data-view="dashboard">📊 Tableau de bord</div>
-    <div class="admin-nav-item" data-view="plongees">🤿 Sorties</div>
-    <div class="admin-nav-item" data-view="all-inscrits">📋 Inscriptions</div>
+    <div class="admin-nav-item" data-view="plongees">📁 Historique</div>
     <div style="border-top:1px solid rgba(255,255,255,.1);margin-top:.5rem;padding-top:.5rem">
       <div class="admin-nav-item" data-view="adherents">👥 Adhérents</div>
     </div>
@@ -1529,8 +1528,7 @@ async function bindAdmin(){
     const m=document.getElementById('admin-main');
     switch(item.dataset.view){
       case 'dashboard':    m.innerHTML=await renderDashboard(); break;
-      case 'plongees':     m.innerHTML=await renderAdminPlongees(); break;
-      case 'all-inscrits': m.innerHTML=renderAllInscrits(); break;
+      case 'plongees':     m.innerHTML=await renderHistorique(); break;
       case 'adherents':    m.innerHTML=await renderAdherents(); bindAdherents(); break;
       case 'materiel':     m.innerHTML=renderMateriel(); break;
     }
@@ -1561,7 +1559,7 @@ async function renderDashboard(){
       </div>
     </div>
     <table><thead><tr><th>Sortie</th><th>Date</th><th>Horaires</th><th>Inscrits</th><th>Enc.</th><th>Nov.</th><th>Actions</th></tr></thead>
-    <tbody>${fut.sort((a,b)=>a.date.localeCompare(b.date)).slice(0,10).map(p=>`<tr>
+    <tbody id="dash-tbody">${fut.sort((a,b)=>a.date.localeCompare(b.date)).map(p=>`<tr>
       <td><strong>${esc(p.titre)}</strong><br><small style="color:var(--gris-texte)">${esc(p.lieu)}</small></td>
       <td>${fmtDate(p.date)}</td>
       <td style="font-size:.76rem">${p.heure_mat?`📦 ${p.heure_mat}<br>`:''}📍 ${p.heure_rdv}<br>🤿 ${p.heure_eau}</td>
@@ -1575,8 +1573,11 @@ async function renderDashboard(){
           :`<button class="btn btn-ghost btn-sm" onclick="openModalPlongee(${p.id})">Modifier</button>`}
         <button class="btn btn-danger btn-sm" onclick="deletePlongee(${p.id})">✕</button>
       </td>
-    </tr>`).join('')||'<tr><td colspan="6" class="text-muted" style="text-align:center;padding:1.5rem">Aucune sortie à venir</td></tr>'}</tbody></table>
-  </div>`;
+    </tr>`).join('')||'<tr><td colspan="7" class="text-muted" style="text-align:center;padding:1.5rem">Aucune sortie à venir</td></tr>'}</tbody></table>
+  </div>
+  <div id="dash-pagination" style="display:flex;justify-content:flex-end;align-items:center;gap:.5rem;padding:.75rem 1rem;border-top:1px solid var(--gris-clair)"></div>`;
+  // Init pagination après rendu
+  setTimeout(()=>initDashPagination(), 50);
 }
 
 async function renderAdminPlongees(){
@@ -1660,15 +1661,18 @@ function openModalPlongee(id){
       </div>
       <div class="form-group"><label class="form-label">Date <span>*</span></label><input type="date" class="form-input" id="fp-date" value="${p?.date||''}"></div>
     </div>
-    <div class="form-group"><label class="form-label">Titre <span>*</span></label><input type="text" class="form-input" id="fp-titre" value="${esc(p?.titre||'')}" placeholder="Ex : Hortense — Étale BM 83"></div>
+    <div class="form-group"><label class="form-label">Site / Lieu <span>*</span></label><input type="text" class="form-input" id="fp-titre" value="${esc(p?.titre||'')}" placeholder="Ex : Hortense — Étale BM 83"></div>
     <div class="form-row-3">
       <div class="form-group"><label class="form-label">📦 Récup. matériel</label><input type="time" class="form-input" id="fp-mat" value="${toTimeVal(p?.heure_mat)}"></div>
       <div class="form-group"><label class="form-label">📍 RDV sur site <span>*</span></label><input type="time" class="form-input" id="fp-rdv" value="${toTimeVal(p?.heure_rdv)}"></div>
       <div class="form-group"><label class="form-label">🤿 Mise à l'eau <span>*</span></label><input type="time" class="form-input" id="fp-eau" value="${toTimeVal(p?.heure_eau)}"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Site / Lieu <span>*</span></label><input type="text" class="form-input" id="fp-lieu" value="${esc(p?.lieu||'')}" placeholder="Site Hortense"></div>
-      <div class="form-group"><label class="form-label">🌊 Marée (Bassin)</label><input type="text" class="form-input" id="fp-maree" value="${esc(p?.maree||'')}" placeholder="BM 83 · Étale 11h17"></div>
+
+      <div class="form-group">
+        <label class="form-label">🌊 Marée (Bassin) <a href="https://maree.info/135" target="_blank" style="font-size:.75rem;margin-left:.5rem;color:var(--bleu-lagon)">📊 Voir les marées →</a></label>
+        <input type="text" class="form-input" id="fp-maree" value="${esc(p?.maree||'')}" placeholder="BM 83 · Étale 11h17">
+      </div>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Directeur de plongée</label><input type="text" class="form-input" id="fp-dp" value="${esc(p?.directeur||'')}" placeholder="Nom Prénom"></div>
@@ -1695,8 +1699,8 @@ async function savePlongee(id){
   const nb_places_novices=parseInt(document.getElementById('fp-places').value)||0;
   const description=document.getElementById('fp-desc').value.trim();
   const al=document.getElementById('fp-alert');
-  if(!titre||!date||!heure_rdv||!heure_eau||!lieu){al.innerHTML=`<div class="alert alert-error">✗ Champs obligatoires manquants (titre, date, RDV, eau, lieu).</div>`;return;}
-  const payload={titre,type,date,heure_mat,heure_rdv,heure_eau,lieu,maree,directeur,nb_places_novices,description};
+  if(!titre||!date||!heure_rdv||!heure_eau){al.innerHTML=`<div class="alert alert-error">✗ Champs obligatoires manquants (site, date, RDV, eau).</div>`;return;}
+  const payload={titre,type,date,heure_mat,heure_rdv,heure_eau,lieu:titre,maree,directeur,nb_places_novices,description};
   if(id&&id!='null') payload.id=parseInt(id);
   try {
     await DB.savePlongee(payload);
@@ -2011,8 +2015,11 @@ async function ouvrirModifAdherent(id){
     <div id="modif-alert"></div>
     <div class="form-group"><label class="form-label">Identifiant (login)</label>
       <input type="text" class="form-input" id="modif-login" value="${esc(u.login)}"></div>
-    <div class="form-group"><label class="form-label">Email</label>
-      <input type="email" class="form-input" id="modif-email" value="${esc(u.email||'')}"></div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <div style="background:var(--blanc-casse);border:1.5px solid var(--gris-clair);border-radius:var(--rs);padding:.65rem .9rem;font-size:.88rem;color:var(--gris-texte)">${esc(u.email||'Non renseigné')}</div>
+      <small class="text-muted" style="display:block;margin-top:.3rem">L'email ne peut pas être modifié ici.</small>
+    </div>
     <div class="form-group"><label class="form-label">Niveau FFESSM</label>
       <select class="form-select" id="modif-niveau">
         ${['Baptême','N1','N2','N3','N4/GP','MF1','MF2'].map(n=>`<option value="${n}"${n===u.niveau?' selected':''}>${n}</option>`).join('')}
@@ -2046,7 +2053,6 @@ async function sauvegarderModifAdherent(id){
   if(!login){al.innerHTML=`<div class="alert alert-error">✗ L'identifiant est requis.</div>`;return;}
   try {
     const updateData = {login, niveau, role, cert_medical_date: cert||null};
-    if(email) updateData.email = email;
     await sb().from('profiles').update(updateData).eq('id', id);
     closeModal('modal-adherent');
     document.getElementById('admin-main').innerHTML = await renderAdherents();
@@ -2838,6 +2844,90 @@ async function envoyerResetPassword(){
     btn.disabled=false;
     btn.innerHTML='Envoyer le lien';
   }
+}
+
+
+// ── PAGINATION DASHBOARD ─────────────────────────────────────────
+let _dashPage = 1;
+const _dashPerPage = 10;
+
+function initDashPagination(){
+  const rows = document.querySelectorAll('#dash-tbody tr');
+  const total = rows.length;
+  if(total <= _dashPerPage){
+    document.getElementById('dash-pagination')?.remove();
+    return;
+  }
+  afficherPageDash(1, rows);
+}
+
+function afficherPageDash(page, rows){
+  if(!rows) rows = document.querySelectorAll('#dash-tbody tr');
+  _dashPage = page;
+  const total = rows.length;
+  const pages = Math.ceil(total / _dashPerPage);
+  const start = (page-1) * _dashPerPage;
+  const end   = start + _dashPerPage;
+  rows.forEach((r,i) => r.style.display = (i>=start && i<end) ? '' : 'none');
+  // Mettre à jour la pagination
+  const pag = document.getElementById('dash-pagination');
+  if(!pag) return;
+  pag.innerHTML = '';
+  // Bouton précédent
+  if(page > 1){
+    const btn = document.createElement('button');
+    btn.className='btn btn-ghost btn-sm';
+    btn.textContent='◀';
+    btn.onclick=()=>afficherPageDash(page-1);
+    pag.appendChild(btn);
+  }
+  // Numéros de page
+  for(let p=1;p<=pages;p++){
+    const btn = document.createElement('button');
+    btn.className=`btn btn-sm ${p===page?'btn-primary':'btn-ghost'}`;
+    btn.textContent=p;
+    btn.onclick=()=>afficherPageDash(p);
+    pag.appendChild(btn);
+  }
+  // Bouton suivant
+  if(page < pages){
+    const btn = document.createElement('button');
+    btn.className='btn btn-ghost btn-sm';
+    btn.textContent='▶';
+    btn.onclick=()=>afficherPageDash(page+1);
+    pag.appendChild(btn);
+  }
+  // Info
+  const info = document.createElement('span');
+  info.style.cssText='font-size:.78rem;color:var(--gris-texte);margin-left:.5rem';
+  info.textContent=`${total} sorties`;
+  pag.appendChild(info);
+}
+
+
+async function renderHistorique(){
+  DB_P = await DB.getPlongees();
+  DB_I = await DB.getInscriptions();
+  const passees = DB_P.filter(p=>p.statut==='realisee').sort((a,b)=>b.date.localeCompare(a.date));
+  return`
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;flex-wrap:wrap;gap:1rem">
+    <h2 class="admin-page-title" style="margin:0">Historique des sorties</h2>
+  </div>
+  ${passees.length?`<div class="table-wrap"><table>
+    <thead><tr><th>Date</th><th>Sortie</th><th>Type</th><th>Participants</th><th>Actions</th></tr></thead>
+    <tbody>${passees.map(p=>`<tr>
+      <td style="font-size:.82rem;white-space:nowrap">${fmtDate(p.date)}</td>
+      <td><strong>${esc(p.titre)}</strong><br><small style="color:var(--gris-texte)">${esc(p.lieu||'')}</small></td>
+      <td><span class="badge ${typeBadge(p.type)}">${typeLabel(p.type)}</span></td>
+      <td><span class="badge badge-blue">${countInscrits(p.id)} inscrits</span></td>
+      <td style="display:flex;gap:.35rem;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="openModalInscrits(${p.id})">Participants</button>
+        <button class="btn btn-ghost btn-sm" onclick="openModalCloture(${p.id})">Re-clôturer</button>
+        <button class="btn btn-danger btn-sm" onclick="deletePlongee(${p.id})">✕</button>
+      </td>
+    </tr>`).join('')}</tbody>
+  </table></div>`
+  :'<div style="text-align:center;padding:3rem;color:var(--gris-texte)">Aucune sortie clôturée pour le moment.</div>'}`;
 }
 
 // -- TOAST -------------------------------------------------------
