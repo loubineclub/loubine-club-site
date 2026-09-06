@@ -585,6 +585,12 @@ const Auth = {
 // -- USERS (admin) -------------------------------------------------
 const Users = {
   async all() {
+    // Récupérer les profils avec l'email depuis auth via RPC
+    try {
+      const { data: rpcData, error } = await sb().rpc('get_profiles_with_email');
+      if(!error && rpcData?.length) return rpcData;
+    } catch(e) { console.warn('RPC get_profiles_with_email:', e.message); }
+    // Fallback : profiles seuls
     const { data } = await sb().from('profiles').select('*').order('login');
     return data || [];
   },
