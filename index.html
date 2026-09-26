@@ -101,6 +101,9 @@ img{max-width:100%;display:block}
 .card-title{font-family:var(--font-d);font-size:1.3rem;font-weight:700;color:var(--bleu-abyssal);margin-bottom:.5rem;text-transform:uppercase}
 
 /* SORTIE CARD */
+.sortie-dayname{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--bleu-lagon);margin-bottom:.1rem;line-height:1}
+.sortie-inscrit{border-left:4px solid var(--vert-ok)!important;background:linear-gradient(135deg,rgba(16,185,129,.04),var(--blanc))!important}
+.inscrit-badge{display:inline-flex;align-items:center;gap:.35rem;background:rgba(16,185,129,.12);color:#059669;font-size:.75rem;font-weight:700;padding:.2rem .65rem;border-radius:100px;margin-bottom:.5rem}
 .sortie-card{background:var(--blanc);border-radius:var(--r);box-shadow:var(--sh-sm);display:flex;
   overflow:hidden;margin-bottom:1rem;transition:box-shadow .2s,transform .2s}
 .sortie-card:hover{box-shadow:var(--sh-md);transform:translateY(-1px)}
@@ -941,222 +944,46 @@ function renderCal(){
 // -- SORTIE CARD --------------------------------------------------
 function renderSortieCard(p){
   const pd=placesNovices(p),enc=countEncadrants(p.id),nov=countNovices(p.id);
+  const sess=Session._cache;
+  const dejaInscrit=sess?DB_I.some(i=>i.plongee_id==p.id&&i.user_id==sess.id):false;
+  const inscriptionId=dejaInscrit?DB_I.find(i=>i.plongee_id==p.id&&i.user_id==sess?.id)?.id:null;
   const horaires=p.type==='fosse'
     ?`<span>RDV ${p.heure_rdv}</span><span>🤿 Eau ${p.heure_eau}</span>`
     :`${p.heure_mat?`<span>📦 Récup. mat. ${p.heure_mat}</span>`:''}
       <span>📍 RDV site ${p.heure_rdv}</span>
       <span>🤿 Mise à l'eau ${p.heure_eau}</span>`;
-  return`<div class="sortie-card">
-    <div class="sortie-date-col"><div class="sortie-day">${getDay(p.date)}</div><div class="sortie-month">${getMonth(p.date)}</div></div>
+  return`<div class="sortie-card${dejaInscrit?' sortie-inscrit':''}">
+    <div class="sortie-date-col">
+      <div class="sortie-dayname">${getDayName(p.date)}</div>
+      <div class="sortie-day">${getDay(p.date)}</div>
+      <div class="sortie-month">${getMonth(p.date)}</div>
+    </div>
     <div class="sortie-body">
+      ${dejaInscrit?`<div class="inscrit-badge">✅ Déjà inscrit</div>`:''}
       <span class="sortie-type-badge ${typeBadge(p.type)}">${typeLabel(p.type)}</span>
       <div class="sortie-title">${esc(p.titre)}</div>
       <div class="sortie-infos">${horaires}${p.maree?`<span>🌊 ${esc(p.maree)}</span>`:''}</div>
       <div style="font-size:.78rem;color:var(--gris-texte)">
-        ${p.nb_places_novices>0?`Personnes ayant besoin d'un encadrant : <strong>${nov}</strong> inscrites — ${pd} place${pd>1?'s':''} dispo (${enc} encadrant${enc>1?'s':''})`:
-        p.type==='fosse'?`Inscrits : <strong>${countInscrits(p.id)}</strong>`:
-        'Plongée autonomes uniquement (N2+)'}
+        ${p.nb_places_novices>0
+          ?`Encadrement : <strong>${nov}</strong> inscrits — ${pd} place${pd>1?'s':''} dispo`
+          :p.type==='fosse'
+            ?`Inscrits : <strong>${countInscrits(p.id)}</strong>`
+            :'Plongeurs autonomes uniquement (N2+)'}
       </div>
       <div class="sortie-actions">
         <button class="btn btn-ghost btn-sm btn-detail" data-id="${p.id}">Détails</button>
-        <button class="btn btn-coral btn-sm btn-inscrire" data-id="${p.id}">Je participe !</button>
+        ${dejaInscrit
+          ?`<button class="btn btn-danger btn-sm" onclick="annulerInscriptionCalendrier(${inscriptionId})">Annuler mon inscription</button>`
+          :`<button class="btn btn-coral btn-sm btn-inscrire" data-id="${p.id}">Je participe !</button>`}
       </div>
     </div>
   </div>`;
 }
-function bindSortieButtons(){
-  document.querySelectorAll('.btn-detail').forEach(b=>b.addEventListener('click',()=>openDetail(parseInt(b.dataset.id))));
-  document.querySelectorAll('.btn-inscrire').forEach(b=>b.addEventListener('click',()=>openInscription(parseInt(b.dataset.id))));
-}
 
-// -- MODAL DETAIL -------------------------------------------------
-function renderParticipantsList(pid){
-  const list = getInscrits(pid);
-  if(!list.length) return '<p style="font-size:.82rem;color:var(--gris-texte);margin-bottom:.5rem">Aucun participant inscrit pour le moment.</p>';
-
-  const encadrants = list.filter(i=>i.encadrant);
-  const plongeurs  = list.filter(i=>!i.encadrant);
-
-  let html = '<div style="margin-bottom:.5rem">';
-  html += '<div class="form-section-title" style="margin-bottom:.75rem">Participants inscrits</div>';
-
-  if(encadrants.length){
-    html += '<div style="font-size:.72rem;font-weight:700;color:var(--orange-coral);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem">Encadrants</div>';
-    html += '<div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.9rem">';
-    encadrants.forEach(i=>{
-      html += `<div style="display:inline-flex;align-items:center;gap:.4rem;background:#fff3f0;border:1px solid #f5c6b8;border-radius:100px;padding:.28rem .75rem;font-size:.82rem">
-        <span style="font-weight:600">${esc(i.prenom)} ${esc(i.nom)}</span>
-        <span style="background:var(--orange-coral);color:#fff;font-size:.65rem;font-weight:700;padding:.1rem .4rem;border-radius:100px">${esc(i.niveau)}</span>
-      </div>`;
-    });
-    html += '</div>';
-  }
-
-  if(plongeurs.length){
-    html += '<div style="font-size:.72rem;font-weight:700;color:var(--bleu-ocean);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem">Plongeurs</div>';
-    html += '<div style="display:flex;flex-wrap:wrap;gap:.4rem">';
-    plongeurs.forEach(i=>{
-      html += `<div style="display:inline-flex;align-items:center;gap:.4rem;background:#e8f3fc;border:1px solid #b8d8ee;border-radius:100px;padding:.28rem .75rem;font-size:.82rem">
-        <span style="font-weight:600">${esc(i.prenom)} ${esc(i.nom)}</span>
-        <span style="background:var(--bleu-lagon);color:#fff;font-size:.65rem;font-weight:700;padding:.1rem .4rem;border-radius:100px">${esc(i.niveau)}</span>
-      </div>`;
-    });
-    html += '</div>';
-  }
-
-  html += '</div>';
-  return html;
-}
-
-function openDetail(id){
-  const p=DB_P.find(x=>x.id==id); if(!p)return;
-  const pd=placesNovices(p),enc=countEncadrants(p.id),nov=countNovices(p.id);
-  document.getElementById('modal-detail-titre').textContent=p.titre;
-  const horairesMeta=p.type==='fosse'?`
-    <div class="meta-item"><span class="meta-label">RDV</span><span class="meta-value">${p.heure_rdv}</span></div>
-    <div class="meta-item"><span class="meta-label">Mise à l'eau</span><span class="meta-value">${p.heure_eau}</span></div>`:`
-    ${p.heure_mat?`<div class="meta-item"><span class="meta-label">📦 Récupération matériel</span><span class="meta-value">${p.heure_mat}</span></div>`:''}
-    <div class="meta-item"><span class="meta-label">📍 RDV sur le site</span><span class="meta-value">${p.heure_rdv}</span></div>
-    <div class="meta-item"><span class="meta-label">🤿 Mise à l'eau</span><span class="meta-value">${p.heure_eau}</span></div>
-    ${p.maree?`<div class="meta-item"><span class="meta-label">🌊 Marée</span><span class="meta-value">${esc(p.maree)}</span></div>`:''}`;
-  document.getElementById('modal-detail-body').innerHTML=`
-    <div class="plongee-meta">
-      <div class="meta-item" style="grid-column:1/-1"><span class="meta-label">Date</span><span class="meta-value">${fmtDateFull(p.date)}</span></div>
-      ${horairesMeta}
-      <div class="meta-item"><span class="meta-label">Site / Lieu</span><span class="meta-value">${esc(p.lieu)}</span></div>
-      ${p.directeur?`<div class="meta-item"><span class="meta-label">Directeur de plongée</span><span class="meta-value">${esc(p.directeur)}</span></div>`:''}
-    </div>
-    <div class="places-info">
-      ${p.nb_places_novices>0?`Personnes ayant besoin d'un encadrant : ${nov} inscrites · ${pd} place${pd>1?'s':''} disponible${pd>1?'s':''} · ${enc} encadrant${enc>1?'s':''}`:p.type==='fosse'?`Inscrits : ${countInscrits(p.id)}`:'Plongée réservée aux autonomes (N2+)'}
-    </div>
-    <p style="line-height:1.7;color:var(--gris-texte);margin-bottom:1.25rem">${esc(p.description||'')}</p>
-    ${renderParticipantsList(p.id)}
-    <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-top:1.25rem">
-      <button class="btn btn-coral" onclick="closeModal('modal-detail');openInscription(${p.id})">Je participe !</button>
-      <button class="btn btn-ghost" onclick="closeModal('modal-detail')">Fermer</button>
-    </div>`;
-  openModal('modal-detail');
-}
-
-// -- MODAL INSCRIPTION --------------------------------------------
-const MAT=['Bloc','Gilet stabilisateur','Détendeur','Autre'];
-
-async function openInscription(id){
-  const p=DB_P.find(x=>x.id==id); if(!p)return;
-  const sess=await Session.get();
-  // Pré-remplissage depuis la session
-  const nomPrefill   = sess ? sess.login : '';
-  const niveauPrefill= sess ? sess.niveau : '';
-
-  document.getElementById('modal-inscription-titre').textContent=p.titre;
-  const horairesInfo=p.type==='fosse'
-    ?`RDV ${p.heure_rdv} · Mise à l'eau ${p.heure_eau}`
-    :`${p.heure_mat?`📦 ${p.heure_mat} · `:''}📍 RDV site ${p.heure_rdv} · 🤿 Eau ${p.heure_eau}`;
-
-  const niveauOptions=['Baptême','N1','N2','N3','N4/GP','MF1','MF2']
-    .map(n=>`<option value="${n}"${n===niveauPrefill?' selected':''}>${n}</option>`).join('');
-
-  const encadrantVisible = NIV_ENC.includes(niveauPrefill);
-  const isNovice = ['N1','Baptême'].includes(niveauPrefill);
-  const pd = placesNovices(p);
-
-  let noviceWarnHtml='';
-  let submitDisabled='';
-  if(isNovice){
-    if(pd<=0){
-      noviceWarnHtml=`<div class="alert alert-warning">⚠️ Il n'y a actuellement plus de place disponible pour les personnes ayant besoin d'un encadrant. Contactez le directeur de plongée.</div>`;
-      submitDisabled='disabled';
-    } else {
-      noviceWarnHtml=`<div class="alert alert-info">ℹ️ ${pd} place${pd>1?'s':''} disponible${pd>1?'s':''} pour les personnes ayant besoin d'un encadrant.</div>`;
-    }
-  }
-
-  document.getElementById('modal-inscription-body').innerHTML=`
-    <div id="inscr-alert"></div>
-    <p style="font-size:.83rem;color:var(--gris-texte);margin-bottom:1.2rem">📅 ${fmtDateFull(p.date)} — ${horairesInfo}</p>
-
-    <div style="background:var(--blanc-casse);border-radius:var(--rs);padding:.9rem 1rem;margin-bottom:1.2rem;display:flex;align-items:center;gap:1rem">
-      <div style="font-size:1.6rem">👤</div>
-      <div>
-        <div style="font-weight:700;font-size:.95rem">${esc(nomPrefill)}</div>
-        <div style="font-size:.8rem;color:var(--gris-texte)">Niveau : <strong>${esc(niveauPrefill)}</strong></div>
-      </div>
-    </div>
-
-    <!-- Case encadrant visible si N3/N4/MF1/MF2 -->
-    <div class="encadrant-box${encadrantVisible?' visible':''}" id="encadrant-box">
-      <label class="encadrant-check-label">
-        <input type="checkbox" id="inscr-encadrant">
-        <span>Je serai <strong>encadrant</strong> sur cette sortie — j'ouvre 2 places supplémentaires pour les personnes ayant besoin d'un encadrant (N1 / baptêmes)</span>
-      </label>
-    </div>
-
-    <div id="novice-warning">${noviceWarnHtml}</div>
-
-    <div class="form-group">
-      <div class="form-section-title">Matériel dont vous avez besoin (que le club doit prévoir)</div>
-      <div class="checkbox-group">${MAT.map(m=>`<label class="checkbox-item"><input type="checkbox" value="${m}" class="inscr-mat"> ${m}</label>`).join('')}</div>
-    </div>
-    <div class="form-group"><label class="form-label">Commentaire</label><textarea class="form-textarea" id="inscr-comm" placeholder="Informations complémentaires..."></textarea></div>
-    <div style="display:flex;gap:.75rem;justify-content:flex-end;flex-wrap:wrap">
-      <button class="btn btn-ghost" onclick="closeModal('modal-inscription')">Annuler</button>
-      <button class="btn btn-coral" id="inscr-submit" ${submitDisabled} onclick="submitInscription(${id})">Valider mon inscription</button>
-    </div>`;
-  openModal('modal-inscription');
-}
-
-function onNiveauChange(pid){
-  const niv=document.getElementById('inscr-niveau').value;
-  const box=document.getElementById('encadrant-box');
-  if(NIV_ENC.includes(niv)) box.classList.add('visible');
-  else{box.classList.remove('visible');const cb=document.getElementById('inscr-encadrant');if(cb)cb.checked=false;}
-  const p=DB_P.find(x=>x.id==pid);
-  const warn=document.getElementById('novice-warning');
-  if(['N1','Baptême'].includes(niv)&&p){
-    const pd=placesNovices(p);
-    if(pd<=0){
-      warn.innerHTML=`<div class="alert alert-warning">⚠️ Il n'y a actuellement plus de place disponible pour les personnes ayant besoin d'un encadrant. Contactez le directeur de plongée pour vous inscrire en liste d'attente.</div>`;
-      document.getElementById('inscr-submit').disabled=true;
-    } else {
-      warn.innerHTML=`<div class="alert alert-info">ℹ️ ${pd} place${pd>1?'s':''} disponible${pd>1?'s':''} pour les personnes ayant besoin d'un encadrant.</div>`;
-      document.getElementById('inscr-submit').disabled=false;
-    }
-  } else {warn.innerHTML='';if(document.getElementById('inscr-submit'))document.getElementById('inscr-submit').disabled=false;}
-}
-
-async function submitInscription(pid){
-  const sess=await Session.get();
-  const nom      = sess ? sess.login   : '';
-  const niveau   = sess ? sess.niveau  : '';
-  const userId   = sess ? sess.id      : null;
-  const encadrant= document.getElementById('inscr-encadrant')?.checked||false;
-  const commentaire=document.getElementById('inscr-comm').value.trim();
-  const materiel=[...document.querySelectorAll('.inscr-mat:checked')].map(c=>c.value);
-  const al=document.getElementById('inscr-alert');
-  const btn=document.getElementById('inscr-submit');
-  const p=DB_P.find(x=>x.id==pid);
-  if(['N1','Baptême'].includes(niveau)&&placesNovices(p)<=0){al.innerHTML=`<div class="alert alert-error">✗ Plus de places disponibles pour les personnes ayant besoin d'un encadrant.</div>`;return;}
-  if(DB_I.find(i=>i.plongee_id==pid&&i.user_id==userId)){al.innerHTML=`<div class="alert alert-error">✗ Vous êtes déjà inscrit à cette sortie.</div>`;return;}
-  if(btn){btn.disabled=true;btn.innerHTML='<span class="spinner"></span>';}
-  try {
-    const ins = await DB.insertInscription({plongee_id:pid,user_id:userId,nom,niveau,encadrant,materiel,commentaire});
-    DB_I.push(ins);
-    closeModal('modal-inscription');
-    refreshSortiesList();
-    showToast('✅ Inscription confirmée ! À bientôt dans l\'eau.');
-  } catch(e) {
-    // Duplicate key = déjà inscrit (cache local désynchronisé)
-    if(e.message && e.message.includes('duplicate key')) {
-      // Recharger les inscriptions depuis Supabase
-      DB_I = await DB.getInscriptions();
-      closeModal('modal-inscription');
-      refreshSortiesList();
-      showToast('✅ Vous étiez déjà inscrit à cette sortie !');
-    } else {
-      al.innerHTML=`<div class="alert alert-error">✗ Erreur : ${e.message||'inscription impossible'}</div>`;
-      if(btn){btn.disabled=false;btn.innerHTML='Valider mon inscription';}
-    }
-  }
+function getDayName(dateStr){
+  if(!dateStr) return '';
+  const jours=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  return jours[new Date(dateStr+'T00:00:00').getDay()];
 }
 function refreshSortiesList(){
   const sl=document.getElementById('sorties-list');
@@ -2315,6 +2142,14 @@ function bindCloseButtons(){
 
 
 // -- PROFIL : ANNULER UNE INSCRIPTION ----------------------------
+async function annulerInscriptionCalendrier(inscriptionId){
+  if(!confirm('Annuler votre inscription à cette sortie ?')) return;
+  await DB.deleteInscription(inscriptionId);
+  DB_I = await DB.getInscriptions();
+  showToast('Inscription annulée.');
+  refreshSortiesList();
+}
+
 async function annulerInscriptionProfil(inscriptionId){
   if(!confirm('Annuler votre inscription à cette sortie ?')) return;
   await DB.deleteInscription(inscriptionId);
