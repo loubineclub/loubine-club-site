@@ -856,6 +856,15 @@ function renderAccueil(){
   </div></section>
   `;
 }
+function bindSortieButtons(){
+  document.querySelectorAll('.btn-inscrire').forEach(b=>{
+    b.addEventListener('click',()=>openInscription(parseInt(b.dataset.id)));
+  });
+  document.querySelectorAll('.btn-detail').forEach(b=>{
+    b.addEventListener('click',()=>openModalInscrits(parseInt(b.dataset.id)));
+  });
+}
+
 function bindAccueil(){ addBubbles(); bindSortieButtons(); }
 
 // -- CLUB ---------------------------------------------------------
@@ -988,6 +997,7 @@ function getDayName(dateStr){
 function refreshSortiesList(){
   const sl=document.getElementById('sorties-list');
   if(sl){const fut=DB_P.filter(p=>p.date>=todayStr()).sort((a,b)=>a.date.localeCompare(b.date));sl.innerHTML=fut.length?fut.map(renderSortieCard).join(''):'<p class="text-muted">Aucune sortie à venir.</p>';}
+  bindSortieButtons();
   bindSortieButtons();
 }
 
