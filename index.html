@@ -716,6 +716,9 @@ async function reloadAll() {
 function saveAll() {}
 
 // -- HELPERS INSCRIPTIONS ------------------------------------------
+const MAT = ['Bloc','Gilet stabilisateur','Détendeur','Autre'];
+const NIV_ENC = ['N3','N4/GP','MF1','MF2'];
+
 function getInscrits(pid){ return DB_I.filter(i=>i.plongee_id==pid); }
 function countInscrits(pid){ return getInscrits(pid).length; }
 function countEncadrants(pid){ return DB_I.filter(i=>i.plongee_id==pid&&i.encadrant).length; }
@@ -726,7 +729,7 @@ function countPlongeesMer(userId){ return DB_R.filter(r=>r.user_id==userId&&r.ty
 function countPlongeesFosse(userId){ return DB_R.filter(r=>r.user_id==userId&&r.type==='fosse').length; }
 function countProngeesVoyage(userId){ return DB_R.filter(r=>r.user_id==userId&&r.type==='voyage').length; }
 function placesNovices(p){ return Math.max(0,(p.nb_places_novices+countEncadrants(p.id)*2)-countNovices(p.id)); }
-const NIV_ENC = ['N3','N4/GP','MF1','MF2'];
+
 
 // -- APP STATE ----------------------------------------------------------------------------------
 
