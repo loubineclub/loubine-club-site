@@ -980,10 +980,10 @@ function renderSortieCard(p){
             :'Plongeurs autonomes uniquement (N2+)'}
       </div>
       <div class="sortie-actions">
-        <button class="btn btn-ghost btn-sm btn-detail" data-id="${p.id}">Détails</button>
+        <button class="btn btn-ghost btn-sm" onclick="openModalInscrits(${p.id})">Détails</button>
         ${dejaInscrit
           ?`<button class="btn btn-danger btn-sm" onclick="annulerInscriptionCalendrier(${inscriptionId})">Annuler mon inscription</button>`
-          :`<button class="btn btn-coral btn-sm btn-inscrire" data-id="${p.id}">Je participe !</button>`}
+          :`<button class="btn btn-coral btn-sm" onclick="openInscription(${p.id})">Je participe !</button>`}
       </div>
     </div>
   </div>`;
