@@ -1960,12 +1960,47 @@ async function saveNiveau(id){
 
 async function resetPassword(id){
   const users = await Users.all();
-  const u = users.find(x=>x.id==id); if(!u)return;
-  const newPwd = prompt(`Nouveau mot de passe temporaire pour "${u.login}" :`);
-  if(!newPwd)return;
-  // En V2 Supabase : un admin doit utiliser la console Supabase pour reset
-  // On met à jour le profil et on avertit
-  alert(`Note V2 : le reset de mot de passe se fait via Supabase Auth Dashboard\nou via l'email de reset. Identifiant : ${u.login}`);
+  const u = users.find(x=>x.id==id); if(!u) return;
+
+  document.getElementById('modal-adherent-titre').textContent = 'Réinitialiser le mot de passe';
+  document.getElementById('modal-adherent-body').innerHTML = `
+    <div id="rp-alert"></div>
+    <p style="font-size:.85rem;color:var(--gris-texte);margin-bottom:1rem">
+      Définir un nouveau mot de passe temporaire pour <strong>${esc(u.login)}</strong>.
+    </p>
+    <div class="form-group">
+      <label class="form-label">Nouveau mot de passe <span>*</span></label>
+      <input type="text" class="form-input" id="rp-pwd" placeholder="6 caractères minimum" value="Loubine1">
+      <small class="text-muted" style="display:block;margin-top:.3rem">Communiquez ce mot de passe à l'adhérent.</small>
+    </div>
+    <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:.5rem">
+      <button class="btn btn-ghost" onclick="closeModal('modal-adherent')">Annuler</button>
+      <button class="btn btn-primary" onclick="confirmerResetPassword('${id}')">Enregistrer</button>
+    </div>`;
+  openModal('modal-adherent');
+}
+
+async function confirmerResetPassword(id){
+  const pwd = document.getElementById('rp-pwd').value.trim();
+  const al  = document.getElementById('rp-alert');
+  if(!pwd || pwd.length < 6){
+    al.innerHTML=`<div class="alert alert-error">✗ Mot de passe trop court (6 caractères minimum).</div>`;
+    return;
+  }
+  const btn = document.querySelector('#modal-adherent-body .btn-primary');
+  if(btn){btn.disabled=true;btn.innerHTML='<span class="spinner"></span>';}
+  try {
+    const { error } = await sb().rpc('admin_set_password', {
+      target_user: id,
+      new_password: pwd
+    });
+    if(error) throw error;
+    closeModal('modal-adherent');
+    showToast(`✅ Mot de passe réinitialisé. Communiquez "${pwd}" à l'adhérent.`);
+  } catch(e){
+    al.innerHTML=`<div class="alert alert-error">✗ Erreur : ${e.message}</div>`;
+    if(btn){btn.disabled=false;btn.innerHTML='Enregistrer';}
+  }
 }
 
 async function deleteUser(id){
@@ -2680,7 +2715,7 @@ async function envoyerResetPassword(){
   btn.innerHTML='<span class="spinner"></span>';
   try {
     const { error } = await sb().auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + window.location.pathname + '#login'
+      redirectTo: 'https://loubineclub.netlify.app/#login'
     });
     if(error){
       al.innerHTML=`<div class="alert alert-error">✗ ${error.message}</div>`;
